@@ -79,27 +79,29 @@ class DashboardTask:
         
         self.is_running = True
         success = False
-        
+        connection = None
+        db_url = None
+
         try:
             # Get database connection
             db_config = self.config.get('database', {})
             db_url = db_config.get('url')
             if not db_url:
                 raise ValueError("Database URL not configured")
-            
+
             connection = self.db_manager.get_connection(db_url)
-            
+
             # Execute query
             query = self.config.get('query')
             if not query:
                 raise ValueError("Query not configured")
-            
+
             data = connection.execute_query(query)
-            
+
             # Render chart
             show_config = self.config.get('show', {})
             chart_type = show_config.get('type', 'table')
-            
+
             # Add countdown information to config
             config_with_countdown = self.config.copy()
             config_with_countdown['_countdown_info'] = {
@@ -110,29 +112,35 @@ class DashboardTask:
             }
 
             chart_content = ChartRenderer.render_chart(chart_type, data, config_with_countdown)
-            
+
             # Write to temp file
             temp_file = self.get_temp_file_path()
             with open(temp_file, 'w', encoding='utf-8') as f:
                 f.write(chart_content)
-            
+
             # Update status
             self.last_run = time.time()
             self.error_count = 0
             self.last_error = None
             success = True
-            
+
         except Exception as e:
             self.error_count += 1
             self.last_error = str(e)
-            
+
             # Write error to temp file
             error_content = format_error_message(e, "Dashboard Task")
             temp_file = self.get_temp_file_path()
             with open(temp_file, 'w', encoding='utf-8') as f:
                 f.write(error_content)
-        
+
         finally:
+            # Always return connection to pool and mark task as not running
+            if connection and db_url:
+                try:
+                    self.db_manager.connection_pool.return_connection(db_url, connection)
+                except Exception:
+                    pass  # Ignore connection return errors
             self.is_running = False
         
         return success
