@@ -27,7 +27,8 @@ class DashboardTask:
         self.error_count = 0
         self.last_error = None
         self.temp_file = None
-        
+        self.last_countdown_update = 0  # Track last countdown update time
+
         # Initialize components
         self.db_manager = DatabaseManager()
         self.config_manager = ConfigManager()
@@ -63,6 +64,70 @@ class DashboardTask:
             return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
         else:
             return f"{minutes:02d}:{seconds:02d}"
+
+    def should_update_countdown(self) -> bool:
+        """Check if countdown should be updated (every 10 seconds)."""
+        current_time = time.time()
+        return (current_time - self.last_countdown_update) >= 10
+
+    def update_countdown_display(self) -> bool:
+        """Update countdown display in temp file without re-executing query."""
+        if not self.should_update_countdown():
+            return False
+
+        try:
+            temp_file = self.get_temp_file_path()
+            if not os.path.exists(temp_file):
+                return False
+
+            # Read current file content
+            with open(temp_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            # Get current countdown info
+            config_with_countdown = self.config.copy()
+            config_with_countdown['_countdown_info'] = {
+                'remaining_time': self.get_remaining_time(),
+                'countdown_display': self.get_countdown_display(),
+                'interval': self.interval,
+                'last_run': self.last_run
+            }
+
+            # Re-render with updated countdown (reuse last data if available)
+            show_config = self.config.get('show', {})
+            chart_type = show_config.get('type', 'table')
+
+            # Try to extract data from existing content or use empty data
+            # This is a simplified approach - in a real implementation,
+            # we might want to cache the last query result
+            try:
+                # For now, we'll just update the countdown in the existing content
+                # by replacing the countdown pattern
+                import re
+
+                # Pattern to match countdown display
+                countdown_pattern = r'Next refresh: \d{1,2}:\d{2}(:\d{2})?|Next refresh: Refreshing\.\.\.'
+                new_countdown = f"Next refresh: {self.get_countdown_display()}"
+
+                if re.search(countdown_pattern, content):
+                    updated_content = re.sub(countdown_pattern, new_countdown, content)
+
+                    # Write updated content back to file
+                    with open(temp_file, 'w', encoding='utf-8') as f:
+                        f.write(updated_content)
+
+                    self.last_countdown_update = time.time()
+                    return True
+
+            except Exception:
+                # If pattern matching fails, fall back to not updating
+                pass
+
+            return False
+
+        except Exception as e:
+            # Ignore countdown update errors
+            return False
 
     def get_temp_file_path(self) -> str:
         """Get or create temp file path for this task."""
@@ -267,13 +332,19 @@ class DashboardScheduler:
         """Main scheduler loop."""
         while self.running:
             try:
-                # Check all tasks
+                # Check all tasks for execution and countdown updates
                 tasks_to_run = []
+                tasks_to_update_countdown = []
+
                 with self.lock:
                     for task in self.tasks.values():
+                        # Check if task should run
                         if task.should_run() and not task.is_running:
                             tasks_to_run.append(task)
-                
+                        # Check if countdown should be updated
+                        elif task.should_update_countdown():
+                            tasks_to_update_countdown.append(task)
+
                 # Execute tasks (outside of lock to avoid blocking)
                 for task in tasks_to_run:
                     try:
@@ -281,6 +352,14 @@ class DashboardScheduler:
                     except Exception as e:
                         # Log error but continue with other tasks
                         print(f"Error executing task {task.task_id}: {e}")
+
+                # Update countdown displays (outside of lock to avoid blocking)
+                for task in tasks_to_update_countdown:
+                    try:
+                        task.update_countdown_display()
+                    except Exception as e:
+                        # Log error but continue with other tasks
+                        print(f"Error updating countdown for task {task.task_id}: {e}")
                 
                 # Sleep for a short interval
                 time.sleep(1)
