@@ -131,7 +131,7 @@ class DashboardCore:
             success = self.scheduler.restart_task(target_task_id)
             if success:
                 # Reload the buffer
-                vim.command('edit!')
+                vim.command('silent edit!')
 
                 return True
             else:
