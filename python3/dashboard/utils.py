@@ -24,10 +24,47 @@ def get_platform_temp_dir() -> str:
 
 def get_platform_config_dir() -> str:
     """Get platform-specific config directory."""
-    home = Path.home()
-    config_dir = home / 'dashboard'
-    config_dir.mkdir(exist_ok=True)
-    return str(config_dir)
+    try:
+        # Try to get home directory using multiple methods
+        home_dir = None
+
+        # Method 1: Try environment variables first
+        if sys.platform.startswith('win'):
+            home_dir = os.environ.get('USERPROFILE') or os.environ.get('HOMEPATH')
+        else:
+            home_dir = os.environ.get('HOME')
+
+        # Method 2: Try os.path.expanduser if env vars failed
+        if not home_dir:
+            try:
+                home_dir = os.path.expanduser('~')
+                # Validate that expanduser actually worked
+                if home_dir == '~':
+                    home_dir = None
+            except:
+                home_dir = None
+
+        # Method 3: Try pathlib.Path.home() as fallback
+        if not home_dir:
+            try:
+                home_dir = str(Path.home())
+            except:
+                home_dir = None
+
+        # Method 4: Use current working directory as last resort
+        if not home_dir:
+            home_dir = os.getcwd()
+
+        config_dir = os.path.join(home_dir, 'dashboard')
+        os.makedirs(config_dir, exist_ok=True)
+        return config_dir
+
+    except Exception:
+        # Ultimate fallback: use temp directory
+        temp_dir = get_platform_temp_dir()
+        config_dir = os.path.join(temp_dir, 'config')
+        os.makedirs(config_dir, exist_ok=True)
+        return config_dir
 
 
 def generate_temp_filename(extension: str = 'tmp') -> str:
