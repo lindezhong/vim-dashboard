@@ -43,169 +43,65 @@ class DashboardCore:
     def start_dashboard(self, config_file: str) -> bool:
         """Start dashboard with specified config file."""
         try:
-            # Log entry point with detailed info
-            print(f"[DEBUG] ========== START DASHBOARD DEBUG ==========")
-            print(f"[DEBUG] start_dashboard called with: {config_file}")
-            print(f"[DEBUG] config_file type: {type(config_file)}")
-            print(f"[DEBUG] config_file repr: {repr(config_file)}")
-            print(f"[DEBUG] VIM_AVAILABLE: {VIM_AVAILABLE}")
-
             # Normalize and validate config file path
             config_file = os.path.abspath(config_file)
-            print(f"[DEBUG] Absolute path: {config_file}")
-            print(f"[DEBUG] Absolute path repr: {repr(config_file)}")
-            print(f"[DEBUG] File exists check: {os.path.exists(config_file)}")
 
             if not os.path.exists(config_file):
                 # Use vim's shellescape() to safely handle paths with special characters
-                print(f"[DEBUG] File does not exist, preparing vim error message")
-                print(f"[DEBUG] About to execute vim command for file not found")
-                print(f"[DEBUG] Original path: {config_file}")
-                print(f"[DEBUG] Path repr: {repr(config_file)}")
-
-                # Test the vim command construction step by step
-                path_repr = repr(config_file)
-                print(f"[DEBUG] Step 1 - path_repr: {path_repr}")
-
-                command_part1 = 'echo "Config file not found: " . shellescape('
-                command_part2 = path_repr
-                command_part3 = ')'
-                full_command = command_part1 + command_part2 + command_part3
-                print(f"[DEBUG] Step 2 - full_command: {full_command}")
-
-                try:
-                    print(f"[DEBUG] Step 3 - Executing echohl ErrorMsg")
-                    vim.command('echohl ErrorMsg')
-                    print(f"[DEBUG] Step 4 - echohl ErrorMsg executed successfully")
-
-                    print(f"[DEBUG] Step 5 - Executing main echo command: {full_command}")
-                    vim.command(full_command)
-                    print(f"[DEBUG] Step 6 - Main echo command executed successfully")
-
-                    print(f"[DEBUG] Step 7 - Executing echohl None")
-                    vim.command('echohl None')
-                    print(f"[DEBUG] Step 8 - echohl None executed successfully")
-
-                except Exception as vim_error:
-                    print(f"[DEBUG] VIM COMMAND ERROR: {vim_error}")
-                    print(f"[DEBUG] VIM COMMAND ERROR TYPE: {type(vim_error)}")
-                    print(f"[DEBUG] VIM COMMAND ERROR ARGS: {vim_error.args}")
-                    raise vim_error
-
-                print(f"[DEBUG] File not found vim commands executed successfully")
+                vim.command('echohl ErrorMsg')
+                vim.command('echo "Config file not found: " . shellescape(' + repr(config_file) + ')')
+                vim.command('echohl None')
                 return False
 
             # Load and validate configuration
-            print(f"[DEBUG] Loading configuration from: {config_file}")
             config = self.config_manager.load_config(config_file)
-            print(f"[DEBUG] Configuration loaded: {config is not None}")
             if not config:
-                print(f"[DEBUG] Configuration loading failed, showing error message")
-                try:
-                    print(f"[DEBUG] Executing configuration load failed message")
-                    vim.command('echohl ErrorMsg')
-                    vim.command('echo "Failed to load configuration"')
-                    vim.command('echohl None')
-                    print(f"[DEBUG] Configuration load failed message executed successfully")
-                except Exception as vim_error:
-                    print(f"[DEBUG] VIM CONFIG ERROR COMMAND ERROR: {vim_error}")
-                    print(f"[DEBUG] VIM CONFIG ERROR COMMAND ERROR TYPE: {type(vim_error)}")
-                    raise vim_error
+                vim.command('echohl ErrorMsg')
+                vim.command('echo "Failed to load configuration"')
+                vim.command('echohl None')
                 return False
 
             # Check if task already exists for this config file
-            print(f"[DEBUG] Checking for existing task...")
             existing_task = self.scheduler.get_task_by_config_file(config_file)
-            print(f"[DEBUG] Existing task found: {existing_task is not None}")
             if existing_task:
-                print(f"[DEBUG] Task already exists, showing warning message")
                 # Use vim's shellescape() to safely handle paths with special characters
-                try:
-                    print(f"[DEBUG] Executing warning message for existing task")
-                    vim.command('echohl WarningMsg')
-                    print(f"[DEBUG] echohl WarningMsg executed")
-
-                    warning_cmd = 'echo "Dashboard already running for: " . shellescape(' + repr(config_file) + ')'
-                    print(f"[DEBUG] Warning command: {warning_cmd}")
-                    vim.command(warning_cmd)
-                    print(f"[DEBUG] Warning echo executed")
-
-                    vim.command('echohl None')
-                    print(f"[DEBUG] echohl None executed")
-                except Exception as vim_error:
-                    print(f"[DEBUG] VIM WARNING COMMAND ERROR: {vim_error}")
-                    print(f"[DEBUG] VIM WARNING COMMAND ERROR TYPE: {type(vim_error)}")
-                    raise vim_error
+                vim.command('echohl WarningMsg')
+                vim.command('echo "Dashboard already running for: " . shellescape(' + repr(config_file) + ')')
+                vim.command('echohl None')
 
                 # Open existing temp file
                 temp_file = existing_task.get_temp_file_path()
-                print(f"[DEBUG] Opening existing temp file: {temp_file}")
                 if os.path.exists(temp_file):
                     vim.command(f'edit {temp_file}')
                 return True
 
             # Add task to scheduler
-            print(f"[DEBUG] Adding new task to scheduler...")
             task_id = self.scheduler.add_task(config_file, config)
-            print(f"[DEBUG] Task added with ID: {task_id}")
             if not task_id:
-                print(f"[DEBUG] Failed to add task, showing error message")
-                try:
-                    print(f"[DEBUG] Executing failed to add task message")
-                    vim.command('echohl ErrorMsg')
-                    vim.command('echo "Failed to start dashboard task"')
-                    vim.command('echohl None')
-                    print(f"[DEBUG] Failed to add task message executed successfully")
-                except Exception as vim_error:
-                    print(f"[DEBUG] VIM ADD TASK ERROR COMMAND ERROR: {vim_error}")
-                    print(f"[DEBUG] VIM ADD TASK ERROR COMMAND ERROR TYPE: {type(vim_error)}")
-                    raise vim_error
+                vim.command('echohl ErrorMsg')
+                vim.command('echo "Failed to start dashboard task"')
+                vim.command('echohl None')
                 return False
 
             # Get task and open temp file
-            print(f"[DEBUG] Getting task and opening temp file...")
             task = self.scheduler.get_task(task_id)
-            print(f"[DEBUG] Task retrieved: {task is not None}")
             if task:
                 temp_file = task.get_temp_file_path()
-                print(f"[DEBUG] Temp file path: {temp_file}")
                 vim.command(f'edit {temp_file}')
-                print(f"[DEBUG] Temp file opened, showing success message")
 
                 # Use vim's shellescape() to safely handle paths with special characters
-                try:
-                    print(f"[DEBUG] Executing success message")
-                    vim.command('echohl MoreMsg')
-                    print(f"[DEBUG] echohl MoreMsg executed")
-
-                    success_cmd = 'echo "Dashboard started: " . shellescape(' + repr(config_file) + ')'
-                    print(f"[DEBUG] Success command: {success_cmd}")
-                    vim.command(success_cmd)
-                    print(f"[DEBUG] Success echo executed")
-
-                    vim.command('echohl None')
-                    print(f"[DEBUG] echohl None executed")
-                except Exception as vim_error:
-                    print(f"[DEBUG] VIM SUCCESS COMMAND ERROR: {vim_error}")
-                    print(f"[DEBUG] VIM SUCCESS COMMAND ERROR TYPE: {type(vim_error)}")
-                    raise vim_error
-
+                vim.command('echohl MoreMsg')
+                vim.command('echo "Dashboard started: " . shellescape(' + repr(config_file) + ')')
+                vim.command('echohl None')
                 return True
 
             return False
 
         except Exception as e:
             error_msg = format_error_message(e, "Dashboard Start")
-            try:
-                print(f"[DEBUG] Executing dashboard start error message")
-                vim.command('echohl ErrorMsg')
-                vim.command('echo "' + error_msg.replace('"', '\\"') + '"')
-                vim.command('echohl None')
-                print(f"[DEBUG] Dashboard start error message executed successfully")
-            except Exception as vim_error:
-                print(f"[DEBUG] VIM DASHBOARD START ERROR MESSAGE ERROR: {vim_error}")
-                print(f"[DEBUG] VIM DASHBOARD START ERROR MESSAGE ERROR TYPE: {type(vim_error)}")
-                # Don't re-raise here as we're already in error handling
+            vim.command('echohl ErrorMsg')
+            vim.command('echo "' + error_msg.replace('"', '\\"') + '"')
+            vim.command('echohl None')
             return False
 
     def restart_dashboard(self) -> bool:
@@ -331,13 +227,10 @@ class DashboardCore:
     def open_dashboard_browser(self) -> bool:
         """Open dashboard configuration browser."""
         try:
-            print(f"[DEBUG] open_dashboard_browser called")
             dashboard_dir = get_platform_config_dir()
-            print(f"[DEBUG] Dashboard directory: {dashboard_dir}")
 
             # Create dashboard directory if it doesn't exist
             if not os.path.exists(dashboard_dir):
-                print(f"[DEBUG] Creating dashboard directory: {dashboard_dir}")
                 os.makedirs(dashboard_dir, exist_ok=True)
                 # Create a sample config file
                 sample_config = """# Sample Dashboard Configuration
@@ -401,21 +294,12 @@ show:
             # Store config files for selection
             # Escape special characters in paths for vim
             escaped_dir = dashboard_dir.replace('\\', '\\\\').replace('"', '\\"')
-            print(f"[DEBUG] Original dashboard_dir: {dashboard_dir}")
-            print(f"[DEBUG] Escaped dashboard_dir: {escaped_dir}")
 
             # Convert Python list to vim list format
             vim_list = '[' + ','.join(f'"{f}"' for f in config_files) + ']'
-            print(f"[DEBUG] Config files list: {config_files}")
-            print(f"[DEBUG] Vim list format: {vim_list}")
 
-            print(f"[DEBUG] About to set vim variable g:dashboard_config_files")
             vim.command(f'let g:dashboard_config_files = {vim_list}')
-            print(f"[DEBUG] Successfully set g:dashboard_config_files")
-
-            print(f"[DEBUG] About to set vim variable g:dashboard_config_dir with: {escaped_dir}")
             vim.command(f'let g:dashboard_config_dir = "{escaped_dir}"')
-            print(f"[DEBUG] Successfully set g:dashboard_config_dir")
             
             return True
             
@@ -447,29 +331,8 @@ def get_dashboard_core() -> DashboardCore:
 # Vim interface functions
 def dashboard_start(config_file: str):
     """Vim interface for starting dashboard."""
-    print(f"[DEBUG] ========== VIM INTERFACE DEBUG ==========")
-    print(f"[DEBUG] dashboard_start called with: {config_file}")
-    print(f"[DEBUG] config_file type: {type(config_file)}")
-    print(f"[DEBUG] config_file repr: {repr(config_file)}")
-
-    try:
-        print(f"[DEBUG] Getting dashboard core instance...")
-        core = get_dashboard_core()
-        print(f"[DEBUG] Dashboard core instance obtained: {core}")
-
-        print(f"[DEBUG] Calling core.start_dashboard...")
-        result = core.start_dashboard(config_file)
-        print(f"[DEBUG] core.start_dashboard returned: {result}")
-        return result
-
-    except Exception as e:
-        print(f"[DEBUG] EXCEPTION in dashboard_start: {e}")
-        print(f"[DEBUG] EXCEPTION type: {type(e)}")
-        print(f"[DEBUG] EXCEPTION args: {e.args}")
-        import traceback
-        print(f"[DEBUG] TRACEBACK:")
-        traceback.print_exc()
-        raise e
+    core = get_dashboard_core()
+    return core.start_dashboard(config_file)
 
 
 def dashboard_restart():
