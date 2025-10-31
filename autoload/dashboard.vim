@@ -298,8 +298,7 @@ function! dashboard#setup_dashboard_buffer()
     " Start periodic refresh timer
     call dashboard#start_refresh_timer()
 
-    " Initial message
-    echo "Dashboard buffer configured with auto-refresh"
+
   endif
 endfunction
 

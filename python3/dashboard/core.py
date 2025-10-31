@@ -135,7 +135,7 @@ class DashboardCore:
             if success:
                 # Reload the buffer
                 vim.command('edit!')
-                vim.command('echohl MoreMsg | echo "Dashboard refreshed" | echohl None')
+
                 return True
             else:
                 vim.command('echohl ErrorMsg | echo "Failed to refresh dashboard" | echohl None')
