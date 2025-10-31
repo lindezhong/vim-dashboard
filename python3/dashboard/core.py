@@ -258,7 +258,7 @@ show:
             vim.current.buffer[:] = lines
             
             # Set up key mappings
-            vim.command('nnoremap <buffer> <CR> :python3 dashboard_open_selected()<CR>')
+            vim.command('nnoremap <buffer> <CR> :python3 import dashboard.core; dashboard.core.dashboard_open_selected()<CR>')
             vim.command('nnoremap <buffer> q :quit<CR>')
             
             # Store config files for selection
