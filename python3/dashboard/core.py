@@ -264,7 +264,9 @@ show:
             # Store config files for selection
             # Escape special characters in paths for vim
             escaped_dir = dashboard_dir.replace('\\', '\\\\').replace('"', '\\"')
-            vim.command(f'let g:dashboard_config_files = {config_files}')
+            # Convert Python list to vim list format
+            vim_list = '[' + ','.join(f'"{f}"' for f in config_files) + ']'
+            vim.command(f'let g:dashboard_config_files = {vim_list}')
             vim.command(f'let g:dashboard_config_dir = "{escaped_dir}"')
             
             return True
@@ -334,10 +336,15 @@ def dashboard_open_selected():
         # Get config files from vim variable
         try:
             config_files = vim.eval('g:dashboard_config_files')
+            # vim.eval returns vim list as Python list, so it should work directly
+            if not isinstance(config_files, list):
+                config_files = []
         except:
             config_files = []
         try:
             config_dir = vim.eval('g:dashboard_config_dir')
+            if not isinstance(config_dir, str):
+                config_dir = ''
         except:
             config_dir = ''
         
