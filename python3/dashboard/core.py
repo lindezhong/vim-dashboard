@@ -96,39 +96,82 @@ class DashboardCore:
                 return False
 
             # Load and validate configuration
+            print(f"[DEBUG] Loading configuration from: {config_file}")
             config = self.config_manager.load_config(config_file)
+            print(f"[DEBUG] Configuration loaded: {config is not None}")
             if not config:
+                print(f"[DEBUG] Configuration loading failed, showing error message")
                 vim.command('echohl ErrorMsg | echo "Failed to load configuration" | echohl None')
                 return False
 
             # Check if task already exists for this config file
+            print(f"[DEBUG] Checking for existing task...")
             existing_task = self.scheduler.get_task_by_config_file(config_file)
+            print(f"[DEBUG] Existing task found: {existing_task is not None}")
             if existing_task:
+                print(f"[DEBUG] Task already exists, showing warning message")
                 # Use vim's shellescape() to safely handle paths with special characters
-                vim.command('echohl WarningMsg')
-                vim.command('echo "Dashboard already running for: " . shellescape(' + repr(config_file) + ')')
-                vim.command('echohl None')
+                try:
+                    print(f"[DEBUG] Executing warning message for existing task")
+                    vim.command('echohl WarningMsg')
+                    print(f"[DEBUG] echohl WarningMsg executed")
+
+                    warning_cmd = 'echo "Dashboard already running for: " . shellescape(' + repr(config_file) + ')'
+                    print(f"[DEBUG] Warning command: {warning_cmd}")
+                    vim.command(warning_cmd)
+                    print(f"[DEBUG] Warning echo executed")
+
+                    vim.command('echohl None')
+                    print(f"[DEBUG] echohl None executed")
+                except Exception as vim_error:
+                    print(f"[DEBUG] VIM WARNING COMMAND ERROR: {vim_error}")
+                    print(f"[DEBUG] VIM WARNING COMMAND ERROR TYPE: {type(vim_error)}")
+                    raise vim_error
+
                 # Open existing temp file
                 temp_file = existing_task.get_temp_file_path()
+                print(f"[DEBUG] Opening existing temp file: {temp_file}")
                 if os.path.exists(temp_file):
                     vim.command(f'edit {temp_file}')
                 return True
 
             # Add task to scheduler
+            print(f"[DEBUG] Adding new task to scheduler...")
             task_id = self.scheduler.add_task(config_file, config)
+            print(f"[DEBUG] Task added with ID: {task_id}")
             if not task_id:
+                print(f"[DEBUG] Failed to add task, showing error message")
                 vim.command('echohl ErrorMsg | echo "Failed to start dashboard task" | echohl None')
                 return False
 
             # Get task and open temp file
+            print(f"[DEBUG] Getting task and opening temp file...")
             task = self.scheduler.get_task(task_id)
+            print(f"[DEBUG] Task retrieved: {task is not None}")
             if task:
                 temp_file = task.get_temp_file_path()
+                print(f"[DEBUG] Temp file path: {temp_file}")
                 vim.command(f'edit {temp_file}')
+                print(f"[DEBUG] Temp file opened, showing success message")
+
                 # Use vim's shellescape() to safely handle paths with special characters
-                vim.command('echohl MoreMsg')
-                vim.command('echo "Dashboard started: " . shellescape(' + repr(config_file) + ')')
-                vim.command('echohl None')
+                try:
+                    print(f"[DEBUG] Executing success message")
+                    vim.command('echohl MoreMsg')
+                    print(f"[DEBUG] echohl MoreMsg executed")
+
+                    success_cmd = 'echo "Dashboard started: " . shellescape(' + repr(config_file) + ')'
+                    print(f"[DEBUG] Success command: {success_cmd}")
+                    vim.command(success_cmd)
+                    print(f"[DEBUG] Success echo executed")
+
+                    vim.command('echohl None')
+                    print(f"[DEBUG] echohl None executed")
+                except Exception as vim_error:
+                    print(f"[DEBUG] VIM SUCCESS COMMAND ERROR: {vim_error}")
+                    print(f"[DEBUG] VIM SUCCESS COMMAND ERROR TYPE: {type(vim_error)}")
+                    raise vim_error
+
                 return True
 
             return False
