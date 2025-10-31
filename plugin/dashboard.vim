@@ -20,12 +20,12 @@ let g:dashboard_config_dir = get(g:, 'dashboard_config_dir', expand('~/dashboard
 let g:dashboard_temp_dir = get(g:, 'dashboard_temp_dir', '')
 
 " Commands
-command! <silent> -nargs=1 -complete=file DashboardStart call dashboard#start(<q-args>)
-command! <silent> -nargs=0 DashboardRestart call dashboard#restart()
-command! <silent> -nargs=? -complete=file DashboardStop call dashboard#stop(<q-args>)
-command! <silent> -nargs=0 DashboardList call dashboard#list()
-command! <silent> -nargs=0 DashboardStatus call dashboard#status()
-command! <silent> -nargs=0 Dashboard call dashboard#browse()
+command! -nargs=1 -complete=file DashboardStart call dashboard#start(<q-args>)
+command! -nargs=0 DashboardRestart call dashboard#restart()
+command! -nargs=? -complete=file DashboardStop call dashboard#stop(<q-args>)
+command! -nargs=0 DashboardList call dashboard#list()
+command! -nargs=0 DashboardStatus call dashboard#status()
+command! -nargs=0 Dashboard call dashboard#browse()
 
 " Auto commands
 augroup DashboardPlugin
