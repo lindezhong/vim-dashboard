@@ -93,10 +93,7 @@ class DashboardCore:
                 # Use the new dashboard buffer setup function
                 vim.command('call dashboard#setup_dashboard_buffer()')
 
-                # Use vim's shellescape() to safely handle paths with special characters
-                vim.command('echohl MoreMsg')
-                vim.command('echo "Dashboard started: " . shellescape(' + repr(config_file) + ')')
-                vim.command('echohl None')
+
                 return True
 
             return False
