@@ -86,24 +86,41 @@ def install_dependencies():
 def verify_installation():
     """Verify that the installation was successful."""
     venv_python = get_venv_python()
-    
+    script_dir = get_script_dir()
+    python3_dir = script_dir / 'python3'
+
     print("Verifying installation...")
-    
-    # Test imports
-    test_imports = [
+
+    # Test basic imports first
+    basic_imports = [
         'rich',
-        'yaml',
-        'dashboard'
+        'yaml'
     ]
-    
-    for module in test_imports:
+
+    for module in basic_imports:
         try:
-            result = subprocess.run([str(venv_python), '-c', f'import {module}'], 
+            result = subprocess.run([str(venv_python), '-c', f'import {module}'],
                                   capture_output=True, text=True, check=True)
             print(f"✓ {module} imported successfully")
         except subprocess.CalledProcessError:
             print(f"✗ Failed to import {module}")
             return False
+
+    # Test dashboard module with proper path
+    try:
+        test_code = f"""
+import sys
+sys.path.insert(0, r'{python3_dir}')
+import dashboard
+print('Dashboard module loaded successfully')
+"""
+        result = subprocess.run([str(venv_python), '-c', test_code],
+                              capture_output=True, text=True, check=True)
+        print("✓ dashboard imported successfully")
+    except subprocess.CalledProcessError as e:
+        print("✗ Failed to import dashboard")
+        print(f"Error: {e.stderr}")
+        return False
     
     return True
 

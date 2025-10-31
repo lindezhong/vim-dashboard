@@ -4,18 +4,12 @@
 rich>=13.0.0
 PyYAML>=6.0
 
-# Database drivers
+# Database drivers (basic set for cross-platform compatibility)
 # MySQL
 PyMySQL>=1.0.0
 
 # PostgreSQL
 psycopg2-binary>=2.9.0
-
-# Oracle
-cx_Oracle>=8.0.0
-
-# SQL Server
-pyodbc>=4.0.0
 
 # Redis
 redis>=4.0.0
@@ -23,5 +17,7 @@ redis>=4.0.0
 # MongoDB
 pymongo>=4.0.0
 
-# Cassandra
-cassandra-driver>=3.25.0
+# Note: Additional database drivers can be installed separately if needed:
+# Oracle: pip install cx_Oracle>=8.0.0 (requires Oracle client and Visual C++)
+# SQL Server: pip install pyodbc>=4.0.0 (requires ODBC drivers)
+# Cassandra: pip install cassandra-driver>=3.25.0

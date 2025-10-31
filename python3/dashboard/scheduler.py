@@ -7,7 +7,7 @@ import time
 import uuid
 import os
 from typing import Dict, Any, Optional, Callable
-from .utils import parse_time_interval, get_temp_dir, format_error_message
+from .utils import parse_interval, get_platform_temp_dir, format_error_message
 from .config import ConfigManager
 from .database.base import DatabaseManager
 from .charts.base import ChartRenderer
@@ -20,7 +20,7 @@ class DashboardTask:
         self.task_id = task_id
         self.config_file = config_file
         self.config = config
-        self.interval = parse_time_interval(config.get('interval', '30s'))
+        self.interval = parse_interval(config.get('interval', '30s'))
         self.last_run = 0
         self.is_running = False
         self.error_count = 0
@@ -39,7 +39,7 @@ class DashboardTask:
     def get_temp_file_path(self) -> str:
         """Get or create temp file path for this task."""
         if not self.temp_file:
-            temp_dir = get_temp_dir()
+            temp_dir = get_platform_temp_dir()
             os.makedirs(temp_dir, exist_ok=True)
             self.temp_file = os.path.join(temp_dir, f"{self.task_id}.tmp")
         return self.temp_file
