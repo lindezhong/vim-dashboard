@@ -86,6 +86,14 @@ class DatabaseManager:
     # Registry of database connection classes
     _connection_classes = {}
     
+    def __init__(self):
+        """Initialize database manager with connection pool."""
+        self.connection_pool = connection_pool
+
+    def get_connection(self, url: str) -> DatabaseConnection:
+        """Get database connection from pool or create new one."""
+        return self.connection_pool.get_connection(url)
+
     @classmethod
     def register_connection_class(cls, scheme: str, connection_class: type):
         """Register a database connection class for a URL scheme."""
