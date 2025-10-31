@@ -277,20 +277,97 @@ function! dashboard#setup_dashboard_buffer()
     setlocal buftype=nowrite
     setlocal readonly
     setlocal nomodeline
-    setlocal updatetime=500
+    setlocal updatetime=1000
+
+    " Store file modification time for comparison
+    let b:dashboard_last_mtime = getftime(l:current_file)
+    let b:is_dashboard_buffer = 1
+    let b:dashboard_file_path = l:current_file
 
     " Set up buffer-local auto commands for file change detection
     augroup DashboardBuffer
       autocmd! * <buffer>
-      " Automatically check for file changes
-      autocmd CursorHold,CursorHoldI <buffer> silent! checktime
-      autocmd FocusGained <buffer> silent! checktime
+      " Multiple triggers for checking file changes
+      autocmd CursorHold,CursorHoldI <buffer> call dashboard#check_file_changes()
+      autocmd FocusGained <buffer> call dashboard#check_file_changes()
+      autocmd BufEnter <buffer> call dashboard#check_file_changes()
       " Handle external file changes without prompting
       autocmd FileChangedShell <buffer> call dashboard#handle_file_changed()
     augroup END
 
-    " Mark this buffer as a dashboard buffer
-    let b:is_dashboard_buffer = 1
+    " Start periodic refresh timer
+    call dashboard#start_refresh_timer()
+
+    " Initial message
+    echo "Dashboard buffer configured with auto-refresh"
+  endif
+endfunction
+
+" Start periodic refresh timer for active dashboard buffer
+function! dashboard#start_refresh_timer()
+  " Stop any existing timer
+  call dashboard#stop_refresh_timer()
+
+  " Start new timer that checks every 2 seconds
+  let b:dashboard_timer = timer_start(2000, 'dashboard#timer_callback', {'repeat': -1})
+endfunction
+
+" Stop refresh timer
+function! dashboard#stop_refresh_timer()
+  if exists('b:dashboard_timer')
+    call timer_stop(b:dashboard_timer)
+    unlet b:dashboard_timer
+  endif
+endfunction
+
+" Timer callback function
+function! dashboard#timer_callback(timer_id)
+  " Only process if current buffer is a dashboard buffer
+  if exists('b:is_dashboard_buffer') && b:is_dashboard_buffer
+    call dashboard#check_file_changes()
+  else
+    " Stop timer if buffer is no longer a dashboard buffer
+    call timer_stop(a:timer_id)
+  endif
+endfunction
+
+" Check for file changes and reload if necessary
+function! dashboard#check_file_changes()
+  if !exists('b:is_dashboard_buffer') || !b:is_dashboard_buffer
+    return
+  endif
+
+  if !exists('b:dashboard_file_path') || !exists('b:dashboard_last_mtime')
+    return
+  endif
+
+  let l:current_file = b:dashboard_file_path
+
+  " Check if file still exists
+  if !filereadable(l:current_file)
+    return
+  endif
+
+  " Get current modification time
+  let l:current_mtime = getftime(l:current_file)
+
+  " Compare with stored modification time
+  if l:current_mtime > b:dashboard_last_mtime
+    " File has been modified, reload it
+    let b:dashboard_last_mtime = l:current_mtime
+
+    " Save current cursor position
+    let l:save_cursor = getpos('.')
+
+    " Reload file silently
+    silent! edit!
+
+    " Restore cursor position
+    call setpos('.', l:save_cursor)
+
+    " Brief status message
+    redraw
+    echo "Dashboard refreshed at " . strftime("%H:%M:%S")
   endif
 endfunction
 
@@ -304,10 +381,15 @@ function! dashboard#handle_file_changed()
   " Automatically reload without prompting
   let v:fcs_choice = 'reload'
 
+  " Update stored modification time
+  if exists('b:dashboard_file_path')
+    let b:dashboard_last_mtime = getftime(b:dashboard_file_path)
+  endif
+
   " Force reload the file
   silent! edit!
 
   " Show a brief message
   redraw
-  echo "Dashboard updated"
+  echo "Dashboard updated via FileChangedShell"
 endfunction
