@@ -72,7 +72,7 @@ class DashboardCore:
                 # Open existing temp file
                 temp_file = existing_task.get_temp_file_path()
                 if os.path.exists(temp_file):
-                    vim.command(f'edit {temp_file}')
+                    vim.command(f'silent edit {temp_file}')
                     # Use the new dashboard buffer setup function
                     vim.command('call dashboard#setup_dashboard_buffer()')
                 return True
@@ -89,7 +89,7 @@ class DashboardCore:
             task = self.scheduler.get_task(task_id)
             if task:
                 temp_file = task.get_temp_file_path()
-                vim.command(f'edit {temp_file}')
+                vim.command(f'silent edit {temp_file}')
                 # Use the new dashboard buffer setup function
                 vim.command('call dashboard#setup_dashboard_buffer()')
 
