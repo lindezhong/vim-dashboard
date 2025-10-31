@@ -1,0 +1,120 @@
+"""
+Oracle database connection implementation
+"""
+
+from typing import Dict, Any, List, Optional, Tuple
+from .base import SQLDatabaseConnection, DatabaseManager
+
+
+class OracleConnection(SQLDatabaseConnection):
+    """Oracle database connection implementation."""
+    
+    def __init__(self, url: str):
+        super().__init__(url)
+        self.port = self.port or 1521  # Default Oracle port
+        # Oracle uses service_name instead of database
+        self.service_name = self.database
+    
+    def connect(self) -> bool:
+        """Establish Oracle connection."""
+        try:
+            import cx_Oracle
+            
+            # Create DSN (Data Source Name)
+            dsn = cx_Oracle.makedsn(self.hostname, self.port, service_name=self.service_name)
+            
+            self.connection = cx_Oracle.connect(
+                user=self.username,
+                password=self.password,
+                dsn=dsn
+            )
+            self.connection.autocommit = True
+            self.is_connected = True
+            return True
+            
+        except ImportError:
+            raise ImportError("cx_Oracle library is required for Oracle connections. Install with: pip install cx_Oracle")
+        except Exception as e:
+            self.is_connected = False
+            raise ConnectionError(f"Failed to connect to Oracle: {e}")
+    
+    def disconnect(self):
+        """Close Oracle connection."""
+        if self.connection:
+            try:
+                self.connection.close()
+            except Exception:
+                pass
+            finally:
+                self.connection = None
+                self.is_connected = False
+    
+    def execute_query(self, query: str) -> List[Dict[str, Any]]:
+        """Execute Oracle query and return results."""
+        if not self.is_connected or not self.connection:
+            raise ConnectionError("Not connected to Oracle database")
+        
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(query)
+            
+            # Get column names
+            columns = [desc[0] for desc in cursor.description] if cursor.description else []
+            
+            # Fetch all results
+            rows = cursor.fetchall()
+            
+            # Convert to list of dictionaries
+            results = []
+            for row in rows:
+                row_dict = {}
+                for i, value in enumerate(row):
+                    if i < len(columns):
+                        row_dict[columns[i]] = value
+                results.append(row_dict)
+            
+            cursor.close()
+            return results
+                    
+        except Exception as e:
+            raise RuntimeError(self.format_sql_error(e))
+    
+    def test_connection(self) -> Tuple[bool, Optional[str]]:
+        """Test Oracle connection."""
+        try:
+            if not self.is_connected:
+                self.connect()
+            
+            # Simple test query
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT 1 FROM DUAL")
+            result = cursor.fetchone()
+            cursor.close()
+            
+            return True, None
+            
+        except Exception as e:
+            return False, str(e)
+    
+    def get_column_names(self, query: str) -> List[str]:
+        """Get column names from query results."""
+        if not self.is_connected or not self.connection:
+            return []
+        
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(query)
+            
+            if cursor.description:
+                column_names = [desc[0] for desc in cursor.description]
+                cursor.close()
+                return column_names
+            
+            cursor.close()
+            return []
+        except Exception:
+            return []
+
+
+# Register Oracle connection class
+DatabaseManager.register_connection_class('oracle', OracleConnection)

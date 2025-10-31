@@ -1,0 +1,27 @@
+# vim-dashboard Python dependencies
+
+# Core dependencies
+rich>=13.0.0
+PyYAML>=6.0
+
+# Database drivers
+# MySQL
+PyMySQL>=1.0.0
+
+# PostgreSQL
+psycopg2-binary>=2.9.0
+
+# Oracle
+cx_Oracle>=8.0.0
+
+# SQL Server
+pyodbc>=4.0.0
+
+# Redis
+redis>=4.0.0
+
+# MongoDB
+pymongo>=4.0.0
+
+# Cassandra
+cassandra-driver>=3.25.0
