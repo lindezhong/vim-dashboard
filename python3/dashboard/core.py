@@ -101,7 +101,16 @@ class DashboardCore:
             print(f"[DEBUG] Configuration loaded: {config is not None}")
             if not config:
                 print(f"[DEBUG] Configuration loading failed, showing error message")
-                vim.command('echohl ErrorMsg | echo "Failed to load configuration" | echohl None')
+                try:
+                    print(f"[DEBUG] Executing configuration load failed message")
+                    vim.command('echohl ErrorMsg')
+                    vim.command('echo "Failed to load configuration"')
+                    vim.command('echohl None')
+                    print(f"[DEBUG] Configuration load failed message executed successfully")
+                except Exception as vim_error:
+                    print(f"[DEBUG] VIM CONFIG ERROR COMMAND ERROR: {vim_error}")
+                    print(f"[DEBUG] VIM CONFIG ERROR COMMAND ERROR TYPE: {type(vim_error)}")
+                    raise vim_error
                 return False
 
             # Check if task already exists for this config file
@@ -141,7 +150,16 @@ class DashboardCore:
             print(f"[DEBUG] Task added with ID: {task_id}")
             if not task_id:
                 print(f"[DEBUG] Failed to add task, showing error message")
-                vim.command('echohl ErrorMsg | echo "Failed to start dashboard task" | echohl None')
+                try:
+                    print(f"[DEBUG] Executing failed to add task message")
+                    vim.command('echohl ErrorMsg')
+                    vim.command('echo "Failed to start dashboard task"')
+                    vim.command('echohl None')
+                    print(f"[DEBUG] Failed to add task message executed successfully")
+                except Exception as vim_error:
+                    print(f"[DEBUG] VIM ADD TASK ERROR COMMAND ERROR: {vim_error}")
+                    print(f"[DEBUG] VIM ADD TASK ERROR COMMAND ERROR TYPE: {type(vim_error)}")
+                    raise vim_error
                 return False
 
             # Get task and open temp file
@@ -178,7 +196,16 @@ class DashboardCore:
 
         except Exception as e:
             error_msg = format_error_message(e, "Dashboard Start")
-            vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
+            try:
+                print(f"[DEBUG] Executing dashboard start error message")
+                vim.command('echohl ErrorMsg')
+                vim.command('echo "' + error_msg.replace('"', '\\"') + '"')
+                vim.command('echohl None')
+                print(f"[DEBUG] Dashboard start error message executed successfully")
+            except Exception as vim_error:
+                print(f"[DEBUG] VIM DASHBOARD START ERROR MESSAGE ERROR: {vim_error}")
+                print(f"[DEBUG] VIM DASHBOARD START ERROR MESSAGE ERROR TYPE: {type(vim_error)}")
+                # Don't re-raise here as we're already in error handling
             return False
 
     def restart_dashboard(self) -> bool:
