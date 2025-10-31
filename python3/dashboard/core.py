@@ -51,10 +51,11 @@ class DashboardCore:
             print(f"[DEBUG] Absolute path: {config_file}")
 
             if not os.path.exists(config_file):
-                # Escape the path for vim echo command
-                escaped_config = config_file.replace('\\', '\\\\').replace('"', '\\"')
-                print(f"[DEBUG] About to execute vim command for file not found. Original: {config_file}, Escaped: {escaped_config}")
-                vim.command(f'echohl ErrorMsg | echo "Config file not found: {escaped_config}" | echohl None')
+                # Use vim's shellescape() to safely handle paths with special characters
+                print(f"[DEBUG] About to execute vim command for file not found. Original: {config_file}")
+                vim.command('echohl ErrorMsg')
+                vim.command(f'echo "Config file not found: " . shellescape({repr(config_file)})')
+                vim.command('echohl None')
                 print(f"[DEBUG] File not found vim command executed successfully")
                 return False
 
@@ -67,9 +68,10 @@ class DashboardCore:
             # Check if task already exists for this config file
             existing_task = self.scheduler.get_task_by_config_file(config_file)
             if existing_task:
-                # Escape the path for vim echo command
-                escaped_config = config_file.replace('\\', '\\\\').replace('"', '\\"')
-                vim.command(f'echohl WarningMsg | echo "Dashboard already running for: {escaped_config}" | echohl None')
+                # Use vim's shellescape() to safely handle paths with special characters
+                vim.command('echohl WarningMsg')
+                vim.command(f'echo "Dashboard already running for: " . shellescape({repr(config_file)})')
+                vim.command('echohl None')
                 # Open existing temp file
                 temp_file = existing_task.get_temp_file_path()
                 if os.path.exists(temp_file):
@@ -87,9 +89,10 @@ class DashboardCore:
             if task:
                 temp_file = task.get_temp_file_path()
                 vim.command(f'edit {temp_file}')
-                # Escape the path for vim echo command
-                escaped_config = config_file.replace('\\', '\\\\').replace('"', '\\"')
-                vim.command(f'echohl MoreMsg | echo "Dashboard started: {escaped_config}" | echohl None')
+                # Use vim's shellescape() to safely handle paths with special characters
+                vim.command('echohl MoreMsg')
+                vim.command(f'echo "Dashboard started: " . shellescape({repr(config_file)})')
+                vim.command('echohl None')
                 return True
 
             return False
@@ -147,19 +150,22 @@ class DashboardCore:
                 if task:
                     success = self.scheduler.remove_task(task.task_id)
                     if success:
-                        # Escape the path for vim echo command
-                        escaped_config = config_file.replace('\\', '\\\\').replace('"', '\\"')
-                        vim.command(f'echohl MoreMsg | echo "Dashboard stopped: {escaped_config}" | echohl None')
+                        # Use vim's shellescape() to safely handle paths with special characters
+                        vim.command('echohl MoreMsg')
+                        vim.command(f'echo "Dashboard stopped: " . shellescape({repr(config_file)})')
+                        vim.command('echohl None')
                         return True
                     else:
-                        # Escape the path for vim echo command
-                        escaped_config = config_file.replace('\\', '\\\\').replace('"', '\\"')
-                        vim.command(f'echohl ErrorMsg | echo "Failed to stop dashboard: {escaped_config}" | echohl None')
+                        # Use vim's shellescape() to safely handle paths with special characters
+                        vim.command('echohl ErrorMsg')
+                        vim.command(f'echo "Failed to stop dashboard: " . shellescape({repr(config_file)})')
+                        vim.command('echohl None')
                         return False
                 else:
-                    # Escape the path for vim echo command
-                    escaped_config = config_file.replace('\\', '\\\\').replace('"', '\\"')
-                    vim.command(f'echohl WarningMsg | echo "No running dashboard for: {escaped_config}" | echohl None')
+                    # Use vim's shellescape() to safely handle paths with special characters
+                    vim.command('echohl WarningMsg')
+                    vim.command(f'echo "No running dashboard for: " . shellescape({repr(config_file)})')
+                    vim.command('echohl None')
                     return False
             else:
                 # Stop current buffer's dashboard
@@ -253,9 +259,10 @@ show:
                     config_files.append(file)
             
             if not config_files:
-                # Escape the path for vim echo command
-                escaped_dir = dashboard_dir.replace('\\', '\\\\').replace('"', '\\"')
-                vim.command(f'echohl WarningMsg | echo "No config files found in {escaped_dir}" | echohl None')
+                # Use vim's shellescape() to safely handle paths with special characters
+                vim.command('echohl WarningMsg')
+                vim.command(f'echo "No config files found in " . shellescape({repr(dashboard_dir)})')
+                vim.command('echohl None')
                 vim.command(f'edit {dashboard_dir}')
                 return True
             
