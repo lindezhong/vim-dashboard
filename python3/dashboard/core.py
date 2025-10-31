@@ -262,8 +262,8 @@ show:
             vim.command('nnoremap <buffer> q :quit<CR>')
             
             # Store config files for selection
-            vim.vars['dashboard_config_files'] = config_files
-            vim.vars['dashboard_config_dir'] = dashboard_dir
+            vim.command(f'let g:dashboard_config_files = {config_files}')
+            vim.command(f'let g:dashboard_config_dir = "{dashboard_dir}"')
             
             return True
             
@@ -330,8 +330,14 @@ def dashboard_open_selected():
         line_num = vim.current.window.cursor[0]
         
         # Get config files from vim variable
-        config_files = vim.vars.get('dashboard_config_files', [])
-        config_dir = vim.vars.get('dashboard_config_dir', '')
+        try:
+            config_files = vim.eval('g:dashboard_config_files')
+        except:
+            config_files = []
+        try:
+            config_dir = vim.eval('g:dashboard_config_dir')
+        except:
+            config_dir = ''
         
         # Calculate selected index (skip header lines)
         selected_index = line_num - 7  # Adjust for header lines
