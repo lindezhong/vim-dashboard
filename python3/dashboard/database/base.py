@@ -146,34 +146,42 @@ class ConnectionPool:
         
         pool = self._pools[url]
         
-        # Try to reuse existing connection
-        for conn in pool:
-            if not conn.is_connected:
+        # Try to reuse existing idle connection
+        for i, conn in enumerate(pool):
+            if hasattr(conn, '_pool_in_use') and not conn._pool_in_use:
                 try:
-                    if conn.connect():
+                    # Test if connection is still valid
+                    if conn.is_connected or conn.connect():
+                        conn._pool_in_use = True
                         self._active_connections[url] += 1
                         return conn
                 except Exception:
                     # Connection failed, remove from pool
-                    pool.remove(conn)
-        
+                    pool.pop(i)
+                    break
+
         # Create new connection if under limit
-        if self._active_connections[url] < self.max_connections:
+        if len(pool) < self.max_connections:
             try:
                 conn = DatabaseManager.create_connection(url)
                 if conn.connect():
+                    conn._pool_in_use = True
                     pool.append(conn)
                     self._active_connections[url] += 1
                     return conn
             except Exception as e:
                 raise ConnectionError(f"Failed to create database connection: {e}")
-        
+
         raise ConnectionError(f"Connection pool limit reached for {url}")
-    
+
     def return_connection(self, url: str, connection: DatabaseConnection):
         """Return connection to pool."""
         if url in self._active_connections:
             self._active_connections[url] = max(0, self._active_connections[url] - 1)
+
+        # Mark connection as available for reuse
+        if hasattr(connection, '_pool_in_use'):
+            connection._pool_in_use = False
         
         # Keep connection alive for reuse
         # Connection will be closed when pool is cleaned up
@@ -192,6 +200,29 @@ class ConnectionPool:
         else:
             for url in list(self._pools.keys()):
                 self.close_all_connections(url)
+
+    def cleanup_idle_connections(self, url: str):
+        """Clean up idle connections that are no longer needed."""
+        if url not in self._pools:
+            return
+
+        pool = self._pools[url]
+        active_connections = []
+
+        for conn in pool:
+            # Keep connections that are currently in use
+            if hasattr(conn, '_pool_in_use') and conn._pool_in_use:
+                active_connections.append(conn)
+            else:
+                # Close idle connections
+                try:
+                    conn.disconnect()
+                except Exception:
+                    pass
+
+        self._pools[url] = active_connections
+        # Update active connection count
+        self._active_connections[url] = len([c for c in active_connections if hasattr(c, '_pool_in_use') and c._pool_in_use])
 
 
 # Global connection pool instance

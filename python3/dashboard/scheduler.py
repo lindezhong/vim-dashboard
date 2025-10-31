@@ -147,6 +147,16 @@ class DashboardTask:
     
     def cleanup(self):
         """Clean up task resources."""
+        # Clean up database connections
+        try:
+            db_config = self.config.get('database', {})
+            db_url = db_config.get('url')
+            if db_url:
+                self.db_manager.connection_pool.cleanup_idle_connections(db_url)
+        except Exception:
+            pass  # Ignore cleanup errors
+
+        # Clean up temp file
         if self.temp_file and os.path.exists(self.temp_file):
             try:
                 os.remove(self.temp_file)
