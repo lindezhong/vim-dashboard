@@ -35,28 +35,64 @@ from .utils import get_platform_config_dir, format_error_message
 
 class DashboardCore:
     """Core dashboard functionality."""
-    
+
     def __init__(self):
         self.config_manager = ConfigManager()
         self.scheduler = get_scheduler()
-        
+
     def start_dashboard(self, config_file: str) -> bool:
         """Start dashboard with specified config file."""
         try:
-            # Log entry point
+            # Log entry point with detailed info
+            print(f"[DEBUG] ========== START DASHBOARD DEBUG ==========")
             print(f"[DEBUG] start_dashboard called with: {config_file}")
+            print(f"[DEBUG] config_file type: {type(config_file)}")
+            print(f"[DEBUG] config_file repr: {repr(config_file)}")
+            print(f"[DEBUG] VIM_AVAILABLE: {VIM_AVAILABLE}")
 
             # Normalize and validate config file path
             config_file = os.path.abspath(config_file)
             print(f"[DEBUG] Absolute path: {config_file}")
+            print(f"[DEBUG] Absolute path repr: {repr(config_file)}")
+            print(f"[DEBUG] File exists check: {os.path.exists(config_file)}")
 
             if not os.path.exists(config_file):
                 # Use vim's shellescape() to safely handle paths with special characters
-                print(f"[DEBUG] About to execute vim command for file not found. Original: {config_file}")
-                vim.command('echohl ErrorMsg')
-                vim.command(f'echo "Config file not found: " . shellescape({repr(config_file)})')
-                vim.command('echohl None')
-                print(f"[DEBUG] File not found vim command executed successfully")
+                print(f"[DEBUG] File does not exist, preparing vim error message")
+                print(f"[DEBUG] About to execute vim command for file not found")
+                print(f"[DEBUG] Original path: {config_file}")
+                print(f"[DEBUG] Path repr: {repr(config_file)}")
+
+                # Test the vim command construction step by step
+                path_repr = repr(config_file)
+                print(f"[DEBUG] Step 1 - path_repr: {path_repr}")
+
+                command_part1 = 'echo "Config file not found: " . shellescape('
+                command_part2 = path_repr
+                command_part3 = ')'
+                full_command = command_part1 + command_part2 + command_part3
+                print(f"[DEBUG] Step 2 - full_command: {full_command}")
+
+                try:
+                    print(f"[DEBUG] Step 3 - Executing echohl ErrorMsg")
+                    vim.command('echohl ErrorMsg')
+                    print(f"[DEBUG] Step 4 - echohl ErrorMsg executed successfully")
+
+                    print(f"[DEBUG] Step 5 - Executing main echo command: {full_command}")
+                    vim.command(full_command)
+                    print(f"[DEBUG] Step 6 - Main echo command executed successfully")
+
+                    print(f"[DEBUG] Step 7 - Executing echohl None")
+                    vim.command('echohl None')
+                    print(f"[DEBUG] Step 8 - echohl None executed successfully")
+
+                except Exception as vim_error:
+                    print(f"[DEBUG] VIM COMMAND ERROR: {vim_error}")
+                    print(f"[DEBUG] VIM COMMAND ERROR TYPE: {type(vim_error)}")
+                    print(f"[DEBUG] VIM COMMAND ERROR ARGS: {vim_error.args}")
+                    raise vim_error
+
+                print(f"[DEBUG] File not found vim commands executed successfully")
                 return False
 
             # Load and validate configuration
@@ -70,7 +106,7 @@ class DashboardCore:
             if existing_task:
                 # Use vim's shellescape() to safely handle paths with special characters
                 vim.command('echohl WarningMsg')
-                vim.command(f'echo "Dashboard already running for: " . shellescape({repr(config_file)})')
+                vim.command('echo "Dashboard already running for: " . shellescape(' + repr(config_file) + ')')
                 vim.command('echohl None')
                 # Open existing temp file
                 temp_file = existing_task.get_temp_file_path()
@@ -91,7 +127,7 @@ class DashboardCore:
                 vim.command(f'edit {temp_file}')
                 # Use vim's shellescape() to safely handle paths with special characters
                 vim.command('echohl MoreMsg')
-                vim.command(f'echo "Dashboard started: " . shellescape({repr(config_file)})')
+                vim.command('echo "Dashboard started: " . shellescape(' + repr(config_file) + ')')
                 vim.command('echohl None')
                 return True
 
@@ -152,19 +188,19 @@ class DashboardCore:
                     if success:
                         # Use vim's shellescape() to safely handle paths with special characters
                         vim.command('echohl MoreMsg')
-                        vim.command(f'echo "Dashboard stopped: " . shellescape({repr(config_file)})')
+                        vim.command('echo "Dashboard stopped: " . shellescape(' + repr(config_file) + ')')
                         vim.command('echohl None')
                         return True
                     else:
                         # Use vim's shellescape() to safely handle paths with special characters
                         vim.command('echohl ErrorMsg')
-                        vim.command(f'echo "Failed to stop dashboard: " . shellescape({repr(config_file)})')
+                        vim.command('echo "Failed to stop dashboard: " . shellescape(' + repr(config_file) + ')')
                         vim.command('echohl None')
                         return False
                 else:
                     # Use vim's shellescape() to safely handle paths with special characters
                     vim.command('echohl WarningMsg')
-                    vim.command(f'echo "No running dashboard for: " . shellescape({repr(config_file)})')
+                    vim.command('echo "No running dashboard for: " . shellescape(' + repr(config_file) + ')')
                     vim.command('echohl None')
                     return False
             else:
@@ -261,7 +297,7 @@ show:
             if not config_files:
                 # Use vim's shellescape() to safely handle paths with special characters
                 vim.command('echohl WarningMsg')
-                vim.command(f'echo "No config files found in " . shellescape({repr(dashboard_dir)})')
+                vim.command('echo "No config files found in " . shellescape(' + repr(dashboard_dir) + ')')
                 vim.command('echohl None')
                 vim.command(f'edit {dashboard_dir}')
                 return True
@@ -341,8 +377,29 @@ def get_dashboard_core() -> DashboardCore:
 # Vim interface functions
 def dashboard_start(config_file: str):
     """Vim interface for starting dashboard."""
-    core = get_dashboard_core()
-    core.start_dashboard(config_file)
+    print(f"[DEBUG] ========== VIM INTERFACE DEBUG ==========")
+    print(f"[DEBUG] dashboard_start called with: {config_file}")
+    print(f"[DEBUG] config_file type: {type(config_file)}")
+    print(f"[DEBUG] config_file repr: {repr(config_file)}")
+
+    try:
+        print(f"[DEBUG] Getting dashboard core instance...")
+        core = get_dashboard_core()
+        print(f"[DEBUG] Dashboard core instance obtained: {core}")
+
+        print(f"[DEBUG] Calling core.start_dashboard...")
+        result = core.start_dashboard(config_file)
+        print(f"[DEBUG] core.start_dashboard returned: {result}")
+        return result
+
+    except Exception as e:
+        print(f"[DEBUG] EXCEPTION in dashboard_start: {e}")
+        print(f"[DEBUG] EXCEPTION type: {type(e)}")
+        print(f"[DEBUG] EXCEPTION args: {e.args}")
+        import traceback
+        print(f"[DEBUG] TRACEBACK:")
+        traceback.print_exc()
+        raise e
 
 
 def dashboard_restart():
