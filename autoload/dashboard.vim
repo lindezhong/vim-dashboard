@@ -241,3 +241,38 @@ EOF
     endtry
   endif
 endfunction
+
+" Check if current file is a dashboard temp file
+function! dashboard#check_dashboard_file()
+  let l:current_file = expand('%:p')
+  let l:temp_dir = s:get_temp_dir()
+
+  " Check if current file is in dashboard temp directory
+  if stridx(l:current_file, l:temp_dir) == 0 && l:current_file =~# '\.tmp$'
+    " This is a dashboard temp file, set up auto-reload
+    setlocal autoread
+    setlocal noswapfile
+    setlocal buftype=nowrite
+    setlocal readonly
+
+    " Set up checktime to detect file changes
+    autocmd CursorHold,CursorHoldI <buffer> checktime
+  endif
+endfunction
+
+" Auto-reload dashboard file if changed
+function! dashboard#auto_reload_if_changed()
+  let l:current_file = expand('%:p')
+  let l:temp_dir = s:get_temp_dir()
+
+  " Only process dashboard temp files
+  if stridx(l:current_file, l:temp_dir) == 0 && l:current_file =~# '\.tmp$'
+    " Check if file has been modified externally
+    checktime
+
+    " If the file was modified, reload it silently
+    if &modified == 0 && getftime(l:current_file) > getftime(bufname('%'))
+      silent! edit!
+    endif
+  endif
+endfunction

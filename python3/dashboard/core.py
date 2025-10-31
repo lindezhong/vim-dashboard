@@ -73,11 +73,16 @@ class DashboardCore:
                 temp_file = existing_task.get_temp_file_path()
                 if os.path.exists(temp_file):
                     vim.command(f'edit {temp_file}')
-                    # Set buffer options for auto-reload
+                    # Set buffer options for auto-reload and prevent W11 warnings
                     vim.command('setlocal autoread')
                     vim.command('setlocal noswapfile')
                     vim.command('setlocal buftype=nowrite')
                     vim.command('setlocal readonly')
+                    vim.command('setlocal nomodeline')
+                    vim.command('setlocal updatetime=1000')
+                    # Set up auto commands for this buffer to handle file changes silently
+                    vim.command('autocmd CursorHold,CursorHoldI <buffer> silent! checktime')
+                    vim.command('autocmd FileChangedShell <buffer> let v:fcs_choice = "reload"')
                 return True
 
             # Add task to scheduler
@@ -93,11 +98,16 @@ class DashboardCore:
             if task:
                 temp_file = task.get_temp_file_path()
                 vim.command(f'edit {temp_file}')
-                # Set buffer options for auto-reload
+                # Set buffer options for auto-reload and prevent W11 warnings
                 vim.command('setlocal autoread')
                 vim.command('setlocal noswapfile')
                 vim.command('setlocal buftype=nowrite')
                 vim.command('setlocal readonly')
+                vim.command('setlocal nomodeline')
+                vim.command('setlocal updatetime=1000')
+                # Set up auto commands for this buffer to handle file changes silently
+                vim.command('autocmd CursorHold,CursorHoldI <buffer> silent! checktime')
+                vim.command('autocmd FileChangedShell <buffer> let v:fcs_choice = "reload"')
 
                 # Use vim's shellescape() to safely handle paths with special characters
                 vim.command('echohl MoreMsg')
