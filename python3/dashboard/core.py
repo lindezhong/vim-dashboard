@@ -262,8 +262,10 @@ show:
             vim.command('nnoremap <buffer> q :quit<CR>')
             
             # Store config files for selection
+            # Escape special characters in paths for vim
+            escaped_dir = dashboard_dir.replace('\\', '\\\\').replace('"', '\\"')
             vim.command(f'let g:dashboard_config_files = {config_files}')
-            vim.command(f'let g:dashboard_config_dir = "{dashboard_dir}"')
+            vim.command(f'let g:dashboard_config_dir = "{escaped_dir}"')
             
             return True
             
