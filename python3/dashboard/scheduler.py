@@ -22,6 +22,7 @@ class DashboardTask:
         self.config = config
         self.interval = parse_interval(config.get('interval', '30s'))
         self.last_run = 0
+        self.next_run = 0
         self.is_running = False
         self.error_count = 0
         self.last_error = None
@@ -36,6 +37,33 @@ class DashboardTask:
         current_time = time.time()
         return (current_time - self.last_run) >= self.interval
     
+    def get_remaining_time(self) -> int:
+        """Get remaining time until next refresh in seconds."""
+        if self.last_run == 0:
+            return 0  # First run, no remaining time
+
+        current_time = time.time()
+        elapsed = current_time - self.last_run
+        remaining = max(0, self.interval - elapsed)
+        return int(remaining)
+
+    def get_countdown_display(self) -> str:
+        """Get formatted countdown display string."""
+        remaining = self.get_remaining_time()
+
+        if remaining == 0:
+            return "Refreshing..."
+
+        # Format as MM:SS or HH:MM:SS
+        hours = remaining // 3600
+        minutes = (remaining % 3600) // 60
+        seconds = remaining % 60
+
+        if hours > 0:
+            return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        else:
+            return f"{minutes:02d}:{seconds:02d}"
+
     def get_temp_file_path(self) -> str:
         """Get or create temp file path for this task."""
         if not self.temp_file:
@@ -72,7 +100,16 @@ class DashboardTask:
             show_config = self.config.get('show', {})
             chart_type = show_config.get('type', 'table')
             
-            chart_content = ChartRenderer.render_chart(chart_type, data, self.config)
+            # Add countdown information to config
+            config_with_countdown = self.config.copy()
+            config_with_countdown['_countdown_info'] = {
+                'remaining_time': self.get_remaining_time(),
+                'countdown_display': self.get_countdown_display(),
+                'interval': self.interval,
+                'last_run': self.last_run
+            }
+
+            chart_content = ChartRenderer.render_chart(chart_type, data, config_with_countdown)
             
             # Write to temp file
             temp_file = self.get_temp_file_path()
@@ -181,7 +218,9 @@ class DashboardScheduler:
                     'is_running': task.is_running,
                     'error_count': task.error_count,
                     'last_error': task.last_error,
-                    'temp_file': task.temp_file
+                    'temp_file': task.temp_file,
+                    'remaining_time': task.get_remaining_time(),
+                    'countdown_display': task.get_countdown_display()
                 }
             return result
     

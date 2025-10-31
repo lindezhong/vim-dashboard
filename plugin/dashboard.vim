@@ -24,6 +24,7 @@ command! -nargs=1 -complete=file DashboardStart call dashboard#start(<q-args>)
 command! -nargs=0 DashboardRestart call dashboard#restart()
 command! -nargs=? -complete=file DashboardStop call dashboard#stop(<q-args>)
 command! -nargs=0 DashboardList call dashboard#list()
+command! -nargs=0 DashboardStatus call dashboard#status()
 command! -nargs=0 Dashboard call dashboard#browse()
 
 " Auto commands

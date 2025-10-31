@@ -40,7 +40,19 @@ class BaseChart(ABC):
     
     def _get_title(self) -> Optional[str]:
         """Get chart title."""
-        return self.config.get('title') or self.style.get('title')
+        base_title = self.config.get('title') or self.style.get('title')
+
+        # Add countdown information if available
+        countdown_info = self.config.get('_countdown_info')
+        if countdown_info:
+            countdown_display = countdown_info.get('countdown_display', '')
+            if countdown_display:
+                if base_title:
+                    return f"{base_title} | Next refresh: {countdown_display}"
+                else:
+                    return f"Dashboard | Next refresh: {countdown_display}"
+
+        return base_title
     
     def _get_title_style(self) -> str:
         """Get title style."""

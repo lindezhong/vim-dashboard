@@ -228,7 +228,8 @@ class DashboardCore:
                 config_file = task_info['config_file']
                 status = "Running" if task_info['is_running'] else "Idle"
                 error_info = f" (Errors: {task_info['error_count']})" if task_info['error_count'] > 0 else ""
-                lines.append(f"  {config_file} - {status}{error_info}")
+                countdown_info = f" | Next refresh: {task_info['countdown_display']}" if task_info.get('countdown_display') else ""
+                lines.append(f"  {config_file} - {status}{error_info}{countdown_info}")
             
             # Display in new buffer
             vim.command('new')
@@ -371,6 +372,11 @@ def dashboard_list():
     """Vim interface for listing dashboards."""
     core = get_dashboard_core()
     core.list_dashboards()
+
+def dashboard_status():
+    """Vim interface for showing dashboard status with countdown."""
+    core = get_dashboard_core()
+    core.list_dashboards()  # Reuse the same functionality as list
 
 
 def dashboard_browser():

@@ -189,6 +189,24 @@ EOF
   endtry
 endfunction
 
+" Show dashboard status with countdown
+function! dashboard#status()
+  if !s:init_python()
+    return
+  endif
+
+  try
+    execute 'python3 << EOF'
+import dashboard.core
+dashboard.core.dashboard_status()
+EOF
+  catch
+    echohl ErrorMsg
+    echom 'Error showing dashboard status: ' . v:exception
+    echohl None
+  endtry
+endfunction
+
 " Browse dashboard configs
 function! dashboard#browse()
   if !s:init_python()
