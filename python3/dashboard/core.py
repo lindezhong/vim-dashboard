@@ -46,7 +46,9 @@ class DashboardCore:
             # Normalize and validate config file path
             config_file = os.path.abspath(config_file)
             if not os.path.exists(config_file):
-                vim.command(f'echohl ErrorMsg | echo "Config file not found: {config_file}" | echohl None')
+                # Escape the path for vim echo command
+                escaped_config = config_file.replace('\\', '\\\\').replace('"', '\\"')
+                vim.command(f'echohl ErrorMsg | echo "Config file not found: {escaped_config}" | echohl None')
                 return False
 
             # Load and validate configuration
@@ -58,7 +60,9 @@ class DashboardCore:
             # Check if task already exists for this config file
             existing_task = self.scheduler.get_task_by_config_file(config_file)
             if existing_task:
-                vim.command(f'echohl WarningMsg | echo "Dashboard already running for: {config_file}" | echohl None')
+                # Escape the path for vim echo command
+                escaped_config = config_file.replace('\\', '\\\\').replace('"', '\\"')
+                vim.command(f'echohl WarningMsg | echo "Dashboard already running for: {escaped_config}" | echohl None')
                 # Open existing temp file
                 temp_file = existing_task.get_temp_file_path()
                 if os.path.exists(temp_file):
@@ -76,7 +80,9 @@ class DashboardCore:
             if task:
                 temp_file = task.get_temp_file_path()
                 vim.command(f'edit {temp_file}')
-                vim.command(f'echohl MoreMsg | echo "Dashboard started: {config_file}" | echohl None')
+                # Escape the path for vim echo command
+                escaped_config = config_file.replace('\\', '\\\\').replace('"', '\\"')
+                vim.command(f'echohl MoreMsg | echo "Dashboard started: {escaped_config}" | echohl None')
                 return True
 
             return False
@@ -134,13 +140,19 @@ class DashboardCore:
                 if task:
                     success = self.scheduler.remove_task(task.task_id)
                     if success:
-                        vim.command(f'echohl MoreMsg | echo "Dashboard stopped: {config_file}" | echohl None')
+                        # Escape the path for vim echo command
+                        escaped_config = config_file.replace('\\', '\\\\').replace('"', '\\"')
+                        vim.command(f'echohl MoreMsg | echo "Dashboard stopped: {escaped_config}" | echohl None')
                         return True
                     else:
-                        vim.command(f'echohl ErrorMsg | echo "Failed to stop dashboard: {config_file}" | echohl None')
+                        # Escape the path for vim echo command
+                        escaped_config = config_file.replace('\\', '\\\\').replace('"', '\\"')
+                        vim.command(f'echohl ErrorMsg | echo "Failed to stop dashboard: {escaped_config}" | echohl None')
                         return False
                 else:
-                    vim.command(f'echohl WarningMsg | echo "No running dashboard for: {config_file}" | echohl None')
+                    # Escape the path for vim echo command
+                    escaped_config = config_file.replace('\\', '\\\\').replace('"', '\\"')
+                    vim.command(f'echohl WarningMsg | echo "No running dashboard for: {escaped_config}" | echohl None')
                     return False
             else:
                 # Stop current buffer's dashboard
@@ -231,7 +243,9 @@ show:
                     config_files.append(file)
             
             if not config_files:
-                vim.command(f'echohl WarningMsg | echo "No config files found in {dashboard_dir}" | echohl None')
+                # Escape the path for vim echo command
+                escaped_dir = dashboard_dir.replace('\\', '\\\\').replace('"', '\\"')
+                vim.command(f'echohl WarningMsg | echo "No config files found in {escaped_dir}" | echohl None')
                 vim.command(f'edit {dashboard_dir}')
                 return True
             
