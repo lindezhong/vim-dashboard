@@ -43,12 +43,19 @@ class DashboardCore:
     def start_dashboard(self, config_file: str) -> bool:
         """Start dashboard with specified config file."""
         try:
+            # Log entry point
+            print(f"[DEBUG] start_dashboard called with: {config_file}")
+
             # Normalize and validate config file path
             config_file = os.path.abspath(config_file)
+            print(f"[DEBUG] Absolute path: {config_file}")
+
             if not os.path.exists(config_file):
                 # Escape the path for vim echo command
                 escaped_config = config_file.replace('\\', '\\\\').replace('"', '\\"')
+                print(f"[DEBUG] About to execute vim command for file not found. Original: {config_file}, Escaped: {escaped_config}")
                 vim.command(f'echohl ErrorMsg | echo "Config file not found: {escaped_config}" | echohl None')
+                print(f"[DEBUG] File not found vim command executed successfully")
                 return False
 
             # Load and validate configuration
@@ -212,10 +219,13 @@ class DashboardCore:
     def open_dashboard_browser(self) -> bool:
         """Open dashboard configuration browser."""
         try:
+            print(f"[DEBUG] open_dashboard_browser called")
             dashboard_dir = get_platform_config_dir()
-            
+            print(f"[DEBUG] Dashboard directory: {dashboard_dir}")
+
             # Create dashboard directory if it doesn't exist
             if not os.path.exists(dashboard_dir):
+                print(f"[DEBUG] Creating dashboard directory: {dashboard_dir}")
                 os.makedirs(dashboard_dir, exist_ok=True)
                 # Create a sample config file
                 sample_config = """# Sample Dashboard Configuration
@@ -278,10 +288,21 @@ show:
             # Store config files for selection
             # Escape special characters in paths for vim
             escaped_dir = dashboard_dir.replace('\\', '\\\\').replace('"', '\\"')
+            print(f"[DEBUG] Original dashboard_dir: {dashboard_dir}")
+            print(f"[DEBUG] Escaped dashboard_dir: {escaped_dir}")
+
             # Convert Python list to vim list format
             vim_list = '[' + ','.join(f'"{f}"' for f in config_files) + ']'
+            print(f"[DEBUG] Config files list: {config_files}")
+            print(f"[DEBUG] Vim list format: {vim_list}")
+
+            print(f"[DEBUG] About to set vim variable g:dashboard_config_files")
             vim.command(f'let g:dashboard_config_files = {vim_list}')
+            print(f"[DEBUG] Successfully set g:dashboard_config_files")
+
+            print(f"[DEBUG] About to set vim variable g:dashboard_config_dir with: {escaped_dir}")
             vim.command(f'let g:dashboard_config_dir = "{escaped_dir}"')
+            print(f"[DEBUG] Successfully set g:dashboard_config_dir")
             
             return True
             

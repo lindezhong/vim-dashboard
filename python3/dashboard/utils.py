@@ -25,14 +25,22 @@ def get_platform_temp_dir() -> str:
 def get_platform_config_dir() -> str:
     """Get platform-specific config directory."""
     try:
+        print(f"[DEBUG] get_platform_config_dir called")
+        print(f"[DEBUG] Platform: {sys.platform}")
+
         # Try to get home directory using multiple methods
         home_dir = None
 
         # Method 1: Try environment variables first
         if sys.platform.startswith('win'):
             home_dir = os.environ.get('USERPROFILE') or os.environ.get('HOMEPATH')
+            print(f"[DEBUG] Windows platform - USERPROFILE: {os.environ.get('USERPROFILE')}")
+            print(f"[DEBUG] Windows platform - HOMEPATH: {os.environ.get('HOMEPATH')}")
         else:
             home_dir = os.environ.get('HOME')
+            print(f"[DEBUG] Unix platform - HOME: {os.environ.get('HOME')}")
+
+        print(f"[DEBUG] Method 1 result - home_dir: {home_dir}")
 
         # Method 2: Try os.path.expanduser if env vars failed
         if not home_dir:
@@ -56,13 +64,17 @@ def get_platform_config_dir() -> str:
             home_dir = os.getcwd()
 
         config_dir = os.path.join(home_dir, 'dashboard')
+        print(f"[DEBUG] Final config_dir: {config_dir}")
         os.makedirs(config_dir, exist_ok=True)
+        print(f"[DEBUG] Successfully created/verified config directory")
         return config_dir
 
-    except Exception:
+    except Exception as e:
+        print(f"[DEBUG] Exception in get_platform_config_dir: {e}")
         # Ultimate fallback: use temp directory
         temp_dir = get_platform_temp_dir()
         config_dir = os.path.join(temp_dir, 'config')
+        print(f"[DEBUG] Fallback config_dir: {config_dir}")
         os.makedirs(config_dir, exist_ok=True)
         return config_dir
 
