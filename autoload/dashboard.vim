@@ -260,37 +260,54 @@ EOF
   endif
 endfunction
 
-" Check if current file is a dashboard temp file
-function! dashboard#check_dashboard_file()
+" Setup dashboard buffer with proper auto-reload settings
+function! dashboard#setup_dashboard_buffer()
   let l:current_file = expand('%:p')
   let l:temp_dir = s:get_temp_dir()
 
   " Check if current file is in dashboard temp directory
-  if stridx(l:current_file, l:temp_dir) == 0 && l:current_file =~# '\.tmp$'
-    " This is a dashboard temp file, set up auto-reload
+  if (stridx(l:current_file, l:temp_dir) == 0 ||
+      \ stridx(l:current_file, 'dashboard') != -1 ||
+      \ stridx(l:current_file, 'vim-dashboard') != -1) &&
+      \ l:current_file =~# '\.tmp$'
+
+    " Set buffer options for dashboard temp files
     setlocal autoread
     setlocal noswapfile
     setlocal buftype=nowrite
     setlocal readonly
+    setlocal nomodeline
+    setlocal updatetime=500
 
-    " Set up checktime to detect file changes
-    autocmd CursorHold,CursorHoldI <buffer> checktime
+    " Set up buffer-local auto commands for file change detection
+    augroup DashboardBuffer
+      autocmd! * <buffer>
+      " Automatically check for file changes
+      autocmd CursorHold,CursorHoldI <buffer> silent! checktime
+      autocmd FocusGained <buffer> silent! checktime
+      " Handle external file changes without prompting
+      autocmd FileChangedShell <buffer> call dashboard#handle_file_changed()
+    augroup END
+
+    " Mark this buffer as a dashboard buffer
+    let b:is_dashboard_buffer = 1
   endif
 endfunction
 
-" Auto-reload dashboard file if changed
-function! dashboard#auto_reload_if_changed()
-  let l:current_file = expand('%:p')
-  let l:temp_dir = s:get_temp_dir()
-
-  " Only process dashboard temp files
-  if stridx(l:current_file, l:temp_dir) == 0 && l:current_file =~# '\.tmp$'
-    " Check if file has been modified externally
-    checktime
-
-    " If the file was modified, reload it silently
-    if &modified == 0 && getftime(l:current_file) > getftime(bufname('%'))
-      silent! edit!
-    endif
+" Handle file changed event for dashboard buffers
+function! dashboard#handle_file_changed()
+  " Only handle dashboard buffers
+  if !exists('b:is_dashboard_buffer') || !b:is_dashboard_buffer
+    return
   endif
+
+  " Automatically reload without prompting
+  let v:fcs_choice = 'reload'
+
+  " Force reload the file
+  silent! edit!
+
+  " Show a brief message
+  redraw
+  echo "Dashboard updated"
 endfunction
