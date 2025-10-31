@@ -365,9 +365,7 @@ function! dashboard#check_file_changes()
     " Restore cursor position
     call setpos('.', l:save_cursor)
 
-    " Brief status message
-    redraw
-    echo "Dashboard refreshed at " . strftime("%H:%M:%S")
+
   endif
 endfunction
 
