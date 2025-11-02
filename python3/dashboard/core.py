@@ -73,6 +73,8 @@ class DashboardCore:
                 temp_file = existing_task.get_temp_file_path()
                 if os.path.exists(temp_file):
                     vim.command(f'silent edit {temp_file}')
+                    # Set filetype to dashboard for syntax highlighting
+                    vim.command('setlocal filetype=dashboard')
                     # Use the new dashboard buffer setup function
                     vim.command('call dashboard#setup_dashboard_buffer()')
                 return True
@@ -90,6 +92,8 @@ class DashboardCore:
             if task:
                 temp_file = task.get_temp_file_path()
                 vim.command(f'silent edit {temp_file}')
+                # Set filetype to dashboard for syntax highlighting
+                vim.command('setlocal filetype=dashboard')
                 # Use the new dashboard buffer setup function
                 vim.command('call dashboard#setup_dashboard_buffer()')
 
@@ -227,7 +231,7 @@ class DashboardCore:
             return False
     
     def open_dashboard_browser(self) -> bool:
-        """Open dashboard configuration browser."""
+        """Open dashboard configuration browser in sidebar."""
         try:
             dashboard_dir = get_platform_config_dir()
 
@@ -252,13 +256,13 @@ show:
                 sample_file = os.path.join(dashboard_dir, "sample.yaml")
                 with open(sample_file, 'w', encoding='utf-8') as f:
                     f.write(sample_config)
-            
+
             # Get all YAML files in dashboard directory
             config_files = []
             for file in os.listdir(dashboard_dir):
                 if file.endswith(('.yaml', '.yml')):
                     config_files.append(file)
-            
+
             if not config_files:
                 # Use vim's shellescape() to safely handle paths with special characters
                 vim.command('echohl WarningMsg')
@@ -266,34 +270,65 @@ show:
                 vim.command('echohl None')
                 vim.command(f'edit {dashboard_dir}')
                 return True
-            
-            # Create browser buffer
-            vim.command('new')
+
+            # Check if sidebar already exists
+            vim.command('let g:dashboard_sidebar_exists = 0')
+            vim.command('for i in range(1, winnr("$"))')
+            vim.command('  if getwinvar(i, "&filetype") == "dashboard-sidebar"')
+            vim.command('    let g:dashboard_sidebar_exists = 1')
+            vim.command('    execute i . "wincmd w"')
+            vim.command('    break')
+            vim.command('  endif')
+            vim.command('endfor')
+
+            sidebar_exists = vim.eval('g:dashboard_sidebar_exists') == '1'
+
+            if not sidebar_exists:
+                # Create sidebar on the left
+                vim.command('topleft 30vnew')
+                vim.command('setlocal filetype=dashboard-sidebar')
+
+            # Set buffer options for sidebar
             vim.command('setlocal buftype=nofile')
             vim.command('setlocal noswapfile')
             vim.command('setlocal cursorline')
-            
-            # Set buffer content
+            vim.command('setlocal nonumber')
+            vim.command('setlocal norelativenumber')
+            vim.command('setlocal nowrap')
+            vim.command('setlocal winfixwidth')
+
+            # Get running tasks to determine status
+            running_tasks = self.scheduler.list_tasks()
+            running_config_files = set()
+            for task_info in running_tasks.values():
+                config_file = os.path.basename(task_info['config_file'])
+                running_config_files.add(config_file)
+
+            # Set buffer content with status indicators
             lines = [
-                "Dashboard Configuration Browser",
-                f"Directory: {dashboard_dir}",
+                "Dashboard Sidebar",
+                f"Directory: {os.path.basename(dashboard_dir)}",
                 "",
-                "Press <Enter> to open selected config",
-                "Press 'q' to quit",
+                "▸ = Not running",
+                "▾ = Running",
                 ""
             ]
-            
-            for i, config_file in enumerate(config_files, 1):
-                full_path = os.path.join(dashboard_dir, config_file)
-                lines.append(f"{i:2d}. {config_file}")
-            
+
+            for config_file in sorted(config_files):
+                if config_file in running_config_files:
+                    status_icon = "▾"
+                else:
+                    status_icon = "▸"
+                lines.append(f"{status_icon} {config_file}")
+
             vim.current.buffer[:] = lines
-            
+
             # Set up key mappings
-            vim.command('nnoremap <buffer> <CR> :python3 import dashboard.core; dashboard.core.dashboard_open_selected()<CR>')
+            vim.command('nnoremap <buffer> <CR> :python3 import dashboard.core; dashboard.core.dashboard_sidebar_select()<CR>')
             vim.command('nnoremap <buffer> q :quit<CR>')
-            
-            # Store config files for selection
+            vim.command('nnoremap <buffer> r :python3 import dashboard.core; dashboard.core.dashboard_browser()<CR>')
+
+            # Store config files and directory for selection
             # Escape special characters in paths for vim
             escaped_dir = dashboard_dir.replace('\\', '\\\\').replace('"', '\\"')
 
@@ -402,6 +437,66 @@ def dashboard_open_selected():
             
     except Exception as e:
         error_msg = format_error_message(e, "Dashboard Selection")
+        vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
+
+def dashboard_sidebar_select():
+    """Handle selection from sidebar."""
+    try:
+        # Get current line number
+        line_num = vim.current.window.cursor[0]
+
+        # Get config files from vim variable
+        try:
+            config_files = vim.eval('g:dashboard_config_files')
+            if not isinstance(config_files, list):
+                config_files = []
+        except:
+            config_files = []
+        try:
+            config_dir = vim.eval('g:dashboard_config_dir')
+            if not isinstance(config_dir, str):
+                config_dir = ''
+        except:
+            config_dir = ''
+
+        # Calculate selected index (skip header lines)
+        selected_index = line_num - 7  # Adjust for header lines (6 header lines + 1 for 0-based)
+
+        if 0 <= selected_index < len(config_files):
+            selected_file = config_files[selected_index]
+            full_path = os.path.join(config_dir, selected_file)
+
+            # Check if dashboard is already running for this config
+            core = get_dashboard_core()
+            existing_task = core.scheduler.get_task_by_config_file(full_path)
+
+            if existing_task:
+                # Dashboard is running, open the temp file
+                temp_file = existing_task.get_temp_file_path()
+                if os.path.exists(temp_file):
+                    # Switch to right window and open temp file
+                    vim.command('wincmd l')
+                    vim.command(f'edit {temp_file}')
+                    # Set filetype to dashboard for syntax highlighting
+                    vim.command('setlocal filetype=dashboard')
+                    # Use the dashboard buffer setup function
+                    vim.command('call dashboard#setup_dashboard_buffer()')
+                else:
+                    vim.command('echohl ErrorMsg | echo "Dashboard temp file not found" | echohl None')
+            else:
+                # Dashboard not running, start it
+                # Switch to right window first
+                vim.command('wincmd l')
+                dashboard_start(full_path)
+
+                # Refresh sidebar to update status
+                vim.command('wincmd h')
+                dashboard_browser()
+        else:
+            vim.command('echohl ErrorMsg | echo "Invalid selection" | echohl None')
+
+    except Exception as e:
+        error_msg = format_error_message(e, "Dashboard Sidebar Selection")
         vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
 
 

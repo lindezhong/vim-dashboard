@@ -134,7 +134,9 @@ class DashboardTask:
         if not self.temp_file:
             temp_dir = get_platform_temp_dir()
             os.makedirs(temp_dir, exist_ok=True)
-            self.temp_file = os.path.join(temp_dir, f"{self.task_id}.tmp")
+            # Extract filename from config file path and use it for temp file
+            config_filename = os.path.splitext(os.path.basename(self.config_file))[0]
+            self.temp_file = os.path.join(temp_dir, f"{config_filename}.dashboard")
         return self.temp_file
     
     def execute(self) -> bool:
