@@ -20,7 +20,10 @@ class DashboardTask:
         self.task_id = task_id
         self.config_file = config_file
         self.config = config
-        self.interval = parse_interval(config.get('interval', '30s'))
+        # Get interval from show.interval (new format) or fallback to interval (old format)
+        show_config = config.get('show', {})
+        interval_str = show_config.get('interval') or config.get('interval', '30s')
+        self.interval = parse_interval(interval_str)
         self.last_run = 0
         self.next_run = 0
         self.is_running = False

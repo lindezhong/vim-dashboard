@@ -124,9 +124,9 @@ query:
     ORDER BY u.created_at DESC
     LIMIT {{ 100 if not filters.get('limit') else filters.limit }}
 
-interval: 30s
 
 show:
+  interval: 30s
   type: table
   column_list:
     - column: id
