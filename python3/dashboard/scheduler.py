@@ -351,8 +351,8 @@ class DashboardScheduler:
                         # Check if task should run
                         if task.should_run() and not task.is_running:
                             tasks_to_run.append(task)
-                        # Check if countdown should be updated
-                        elif task.should_update_countdown():
+                        # Check if countdown should be updated (independent of task execution)
+                        if task.should_update_countdown():
                             tasks_to_update_countdown.append(task)
 
                 # Execute tasks (outside of lock to avoid blocking)
