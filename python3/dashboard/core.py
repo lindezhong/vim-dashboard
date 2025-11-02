@@ -251,14 +251,21 @@ class DashboardCore:
                             vim.command('silent! checktime')
                             vim.command('redraw!')
 
+                            # Immediately ensure focus is on the dashboard window after file switch
+                            vim.command('wincmd l')  # Move to right window first
+
                             # Now close the old buffer (window layout is preserved since we have a new buffer)
                             vim.command(f'silent! bwipeout {current_buffer_number}')
 
-                            # Ensure focus stays on the dashboard window (right side)
-                            # Force switch to the dashboard window
-                            vim.command('wincmd l')  # Move to right window
-                            # Double check we're in the right place
-                            vim.command('if &filetype != "dashboard" | wincmd w | endif')
+                            # Final focus enforcement - find and switch to dashboard window
+                            vim.command('''
+for i in range(1, winnr("$") + 1)
+  if getwinvar(i, "&filetype") == "dashboard"
+    execute i . "wincmd w"
+    break
+  endif
+endfor
+''')
 
                             vim.command('echohl MoreMsg | echo "Dashboard stopped, switched to remaining dashboard" | echohl None')
                         else:
