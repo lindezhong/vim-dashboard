@@ -1,17 +1,13 @@
 """
-Line chart implementation using Rich
+Line chart implementation with proper line visualization and Y-axis labels
 """
 
 from typing import Dict, Any, List, Optional, Tuple
-from rich.console import Console
-from rich.text import Text
-from rich.align import Align
-from .base import BaseChart, ChartRenderer, ASCIIChartHelper
+from .base import BaseChart, ChartRenderer
 from ..utils import truncate_string
 
-
 class LineChart(BaseChart):
-    """Line chart implementation using ASCII characters."""
+    """Line chart implementation using ASCII characters with proper line connections."""
     
     def __init__(self, data: List[Dict[str, Any]], config: Dict[str, Any]):
         super().__init__(data, config)
@@ -53,6 +49,11 @@ class LineChart(BaseChart):
                 'line_style': 'solid',
                 'marker': 'circle'
             }]
+        
+        # Axes configuration
+        self.axes_config = self.show_config.get('axes', {})
+        self.x_axis_config = self.axes_config.get('x_axis', {})
+        self.y_axis_config = self.axes_config.get('y_axis', {})
         
     def _extract_chart_data(self) -> Tuple[List[str], Dict[str, List[float]]]:
         """Extract x and y data from the dataset for multiple series."""
@@ -97,231 +98,185 @@ class LineChart(BaseChart):
 
         return labels, series_data
     
-    def _get_chart_dimensions(self) -> Tuple[int, int]:
-        """Get chart dimensions."""
-        width = self._get_width()
-        height = self._get_height()
+    def _create_ascii_line_chart(self, labels: List[str], series_data: Dict[str, List[float]], 
+                                chart_width: int, chart_height: int, min_val: float, max_val: float) -> List[str]:
+        """Create ASCII line chart with proper line visualization."""
         
-        # Reserve space for labels and axes
-        chart_width = max(20, width - 15) if width else 60
-        chart_height = max(5, height - 4)
-        
-        return chart_width, chart_height
-    
-    def _normalize_values_to_chart_height(self, values: List[float], chart_height: int) -> List[int]:
-        """Normalize values to fit chart height."""
-        if not values:
-            return []
-        
-        min_val = min(values)
-        max_val = max(values)
-        
-        if max_val == min_val:
-            # All values are the same, put them in the middle
-            middle = chart_height // 2
-            return [middle] * len(values)
-        
-        # Normalize to chart height (0 = bottom, chart_height-1 = top)
-        normalized = []
-        for value in values:
-            # Scale value to 0-1 range
-            normalized_val = (value - min_val) / (max_val - min_val)
-            # Scale to chart height
-            chart_pos = int(normalized_val * (chart_height - 1))
-            normalized.append(chart_pos)
-        
-        return normalized
-    
-    def _create_line_chart_grid(self, chart_width: int, chart_height: int) -> List[List[str]]:
-        """Create empty chart grid."""
+        # Initialize empty grid
         grid = []
         for _ in range(chart_height):
-            row = [' '] * chart_width
-            grid.append(row)
-        return grid
-    
-    def _plot_points_and_lines(self, grid: List[List[str]], labels: List[str], 
-                              normalized_values: List[int], chart_width: int, chart_height: int):
-        """Plot points and connecting lines on the grid (legacy method for backward compatibility)."""
-        point_char = self.style.get('point_char', ASCIIChartHelper.CHART_CHARS['line']['point'])
-        self._plot_series_points_and_lines(grid, labels, normalized_values, chart_width, chart_height, point_char)
-
-    def _plot_series_points_and_lines(self, grid: List[List[str]], labels: List[str],
-                                     normalized_values: List[int], chart_width: int, chart_height: int, point_char: str):
-        """Plot points and connecting lines for a single series on the grid."""
-        if not normalized_values:
-            return
-
-        # Calculate x positions for data points
-        if len(normalized_values) == 1:
-            x_positions = [chart_width // 2]
-        else:
-            x_positions = []
-            for i in range(len(normalized_values)):
-                x_pos = int((i / (len(normalized_values) - 1)) * (chart_width - 1))
-                x_positions.append(x_pos)
-
-        # Plot points with smart character placement
-        for i, (x_pos, y_pos) in enumerate(zip(x_positions, normalized_values)):
-            if 0 <= x_pos < chart_width and 0 <= y_pos < chart_height:
-                # Y coordinate is inverted (0 = top of grid, but we want 0 = bottom of chart)
-                grid_y = chart_height - 1 - y_pos
-                current_char = grid[grid_y][x_pos]
-
-                # Smart character placement strategy
-                if current_char == ' ' or current_char == ASCIIChartHelper.CHART_CHARS['line']['line_h']:
-                    # Empty space or horizontal line - place the point
-                    grid[grid_y][x_pos] = point_char
-                elif current_char in ['●', '◆', '▲', '■', '♦', '○', '◇', '△', '□', '◊']:
-                    # Another series point is already here - use combination character
-                    # Try to place the new point in adjacent positions
-                    placed = False
-
-                    # Try adjacent positions (priority: right, left, up, down)
-                    adjacent_positions = [
-                        (x_pos + 1, grid_y),     # Right
-                        (x_pos - 1, grid_y),     # Left
-                        (x_pos, grid_y - 1),     # Up
-                        (x_pos, grid_y + 1),     # Down
-                    ]
-
-                    for adj_x, adj_y in adjacent_positions:
-                        if (0 <= adj_x < chart_width and 0 <= adj_y < chart_height and
-                            (grid[adj_y][adj_x] == ' ' or grid[adj_y][adj_x] == ASCIIChartHelper.CHART_CHARS['line']['line_h'])):
-                            grid[adj_y][adj_x] = point_char
-                            placed = True
-                            break
-
-                    # If no adjacent position available, use a combination character
-                    if not placed:
-                        grid[grid_y][x_pos] = '※'  # Multi-series indicator
+            grid.append([' '] * chart_width)
+        
+        # Characters for different series
+        point_chars = ['●', '◆', '▲', '■', '♦']
+        
+        # Plot each series
+        for series_idx, y_col in enumerate(self.y_columns):
+            column_name = y_col['column']
+            if column_name not in series_data:
+                continue
+                
+            values = series_data[column_name]
+            if not values:
+                continue
+            
+            point_char = point_chars[series_idx % len(point_chars)]
+            
+            # Convert values to grid coordinates
+            points = []
+            for i, value in enumerate(values):
+                # X coordinate
+                if len(values) == 1:
+                    x = chart_width // 2
                 else:
-                    # Some other character - try to place in adjacent position
-                    adjacent_positions = [
-                        (x_pos + 1, grid_y), (x_pos - 1, grid_y),
-                        (x_pos, grid_y - 1), (x_pos, grid_y + 1)
-                    ]
-
-                    for adj_x, adj_y in adjacent_positions:
-                        if (0 <= adj_x < chart_width and 0 <= adj_y < chart_height and
-                            grid[adj_y][adj_x] == ' '):
-                            grid[adj_y][adj_x] = point_char
-                            break
-        
-        # Draw connecting lines
-        line_char = self.style.get('line_char', ASCIIChartHelper.CHART_CHARS['line']['line_h'])
-        
-        for i in range(len(x_positions) - 1):
-            x1, y1 = x_positions[i], normalized_values[i]
-            x2, y2 = x_positions[i + 1], normalized_values[i + 1]
+                    x = int((i / (len(values) - 1)) * (chart_width - 1))
+                
+                # Y coordinate (normalized and inverted)
+                if max_val == min_val:
+                    y = chart_height // 2
+                else:
+                    normalized = (value - min_val) / (max_val - min_val)
+                    y = int((1 - normalized) * (chart_height - 1))  # Invert Y
+                
+                points.append((x, y))
             
-            self._draw_line_between_points(grid, x1, y1, x2, y2, chart_width, chart_height, line_char)
+            # Draw lines between consecutive points using Bresenham algorithm
+            for i in range(len(points) - 1):
+                x1, y1 = points[i]
+                x2, y2 = points[i + 1]
+                self._draw_line_on_grid(grid, x1, y1, x2, y2, chart_width, chart_height)
+            
+            # Draw points on top of lines
+            for x, y in points:
+                if 0 <= x < chart_width and 0 <= y < chart_height:
+                    grid[y][x] = point_char
+        
+        # Convert grid to strings
+        result = []
+        for row in grid:
+            result.append(''.join(row))
+        
+        return result
     
-    def _draw_line_between_points(self, grid: List[List[str]], x1: int, y1: int, x2: int, y2: int,
-                                 chart_width: int, chart_height: int, line_char: str):
-        """Draw line between two points using Bresenham-like algorithm."""
-        # Convert to grid coordinates (invert Y)
-        grid_y1 = chart_height - 1 - y1
-        grid_y2 = chart_height - 1 - y2
+    def _draw_line_on_grid(self, grid: List[List[str]], x1: int, y1: int, x2: int, y2: int, 
+                          chart_width: int, chart_height: int):
+        """Draw a line between two points using Bresenham's algorithm."""
         
-        # Simple line drawing
-        steps = max(abs(x2 - x1), abs(grid_y2 - grid_y1))
-        if steps == 0:
-            return
+        # Bresenham's line algorithm
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
         
-        x_step = (x2 - x1) / steps
-        y_step = (grid_y2 - grid_y1) / steps
+        x_step = 1 if x1 < x2 else -1
+        y_step = 1 if y1 < y2 else -1
         
-        for step in range(steps + 1):
-            x = int(x1 + step * x_step)
-            y = int(grid_y1 + step * y_step)
-            
+        error = dx - dy
+        x, y = x1, y1
+        
+        while True:
+            # Draw line character if position is empty
             if 0 <= x < chart_width and 0 <= y < chart_height:
-                # Don't overwrite points
                 if grid[y][x] == ' ':
-                    if abs(y_step) > abs(x_step):
-                        # More vertical than horizontal
-                        grid[y][x] = ASCIIChartHelper.CHART_CHARS['line']['line_v']
+                    # Choose line character based on direction
+                    if dx > dy * 2:  # More horizontal
+                        grid[y][x] = '─'
+                    elif dy > dx * 2:  # More vertical  
+                        grid[y][x] = '│'
+                    elif (x_step > 0 and y_step > 0) or (x_step < 0 and y_step < 0):
+                        grid[y][x] = '\\'  # Diagonal down-right or up-left
                     else:
-                        # More horizontal than vertical
-                        grid[y][x] = line_char
+                        grid[y][x] = '/'   # Diagonal down-left or up-right
+            
+            # Check if we've reached the end point
+            if x == x2 and y == y2:
+                break
+            
+            # Calculate next position
+            error2 = 2 * error
+            
+            if error2 > -dy:
+                error -= dy
+                x += x_step
+            
+            if error2 < dx:
+                error += dx
+                y += y_step
     
-    def _add_axes_to_grid(self, grid: List[List[str]], chart_width: int, chart_height: int):
-        """Add axes to the chart grid."""
-        # Add bottom axis (x-axis)
-        axis_char = ASCIIChartHelper.CHART_CHARS['line']['line_h']
-        for x in range(chart_width):
-            if grid[chart_height - 1][x] == ' ':
-                grid[chart_height - 1][x] = axis_char
+    def _create_y_axis_labels(self, min_val: float, max_val: float, chart_height: int, y_axis_width: int) -> List[str]:
+        """Create Y-axis labels for each row."""
+        labels = []
         
-        # Add left axis (y-axis) - optional
-        if self.style.get('show_y_axis', False):
-            axis_char = ASCIIChartHelper.CHART_CHARS['line']['line_v']
-            for y in range(chart_height):
-                if grid[y][0] == ' ':
-                    grid[y][0] = axis_char
+        # Create labels for each row of the chart
+        for i in range(chart_height):
+            # Calculate the value for this row (inverted because grid[0] is top)
+            row_from_bottom = chart_height - 1 - i
+            if chart_height == 1:
+                value = (min_val + max_val) / 2
+            else:
+                value = min_val + (row_from_bottom / (chart_height - 1)) * (max_val - min_val)
+            
+            # Format the value
+            formatted_value = self._format_value(value)
+            
+            # Right-align the label within the Y-axis width
+            label = formatted_value.rjust(y_axis_width - 1) + ' '
+            labels.append(label)
+        
+        return labels
     
-    def _create_x_axis_labels(self, labels: List[str], chart_width: int) -> str:
+    def _create_x_axis_labels(self, labels: List[str], chart_width: int, y_axis_width: int) -> str:
         """Create x-axis labels line."""
         if not labels:
             return ""
         
-        # Calculate positions for labels
-        if len(labels) == 1:
-            positions = [chart_width // 2]
-        else:
-            positions = []
-            for i in range(len(labels)):
-                pos = int((i / (len(labels) - 1)) * (chart_width - 1))
-                positions.append(pos)
+        # Create label line with Y-axis offset
+        label_chars = [' '] * (y_axis_width + 1 + chart_width)
         
-        # Create label line
-        label_chars = [' '] * chart_width
+        # Add Y-axis spacing
+        for i in range(y_axis_width + 1):
+            label_chars[i] = ' '
         
-        for i, (pos, label) in enumerate(zip(positions, labels)):
-            # Truncate label to fit
-            max_label_len = min(len(label), chart_width - pos)
-            if max_label_len > 0:
-                truncated_label = label[:max_label_len]
-                for j, char in enumerate(truncated_label):
-                    if pos + j < chart_width:
-                        label_chars[pos + j] = char
+        # Calculate positions for labels and add them
+        if len(labels) > 1:
+            # Show up to 5 labels to avoid crowding
+            step = max(1, len(labels) // 5)
+            for i in range(0, len(labels), step):
+                if i < len(labels):
+                    label = labels[i]
+                    # Calculate position
+                    pos = int((i / (len(labels) - 1)) * (chart_width - 1))
+                    adjusted_pos = y_axis_width + 1 + pos
+                    
+                    # Truncate label to fit
+                    max_label_len = min(len(label), len(label_chars) - adjusted_pos)
+                    if max_label_len > 0:
+                        truncated_label = label[:max_label_len]
+                        for j, char in enumerate(truncated_label):
+                            if adjusted_pos + j < len(label_chars):
+                                label_chars[adjusted_pos + j] = char
         
         return ''.join(label_chars)
     
-    def _create_y_axis_info(self, values: List[float]) -> List[str]:
-        """Create y-axis value information."""
-        if not values:
-            return []
-        
-        min_val = min(values)
-        max_val = max(values)
-        
-        info_lines = []
-        if self.style.get('show_y_range', True):
-            info_lines.append(f"Range: {self._format_value(min_val)} - {self._format_value(max_val)}")
-        
-        return info_lines
-    
     def _format_value(self, value: float) -> str:
         """Format value for display."""
-        format_str = self.style.get('value_format', '{:.1f}')
+        # Use Y-axis format if specified
+        y_format = self.y_axis_config.get('format', '{:.0f}')
         try:
-            return format_str.format(value)
+            return y_format.format(value)
         except:
-            return str(value)
+            # Fallback to simple formatting
+            if abs(value) >= 1000:
+                return f"{value/1000:.1f}k"
+            elif abs(value) >= 1:
+                return f"{value:.0f}"
+            else:
+                return f"{value:.2f}"
     
     def render(self) -> str:
-        """Render line chart with multiple series support."""
+        """Render line chart with proper line visualization and Y-axis labels."""
         labels, series_data = self._extract_chart_data()
 
         if not labels or not series_data:
             return self._handle_empty_data()
-
-        chart_width, chart_height = self._get_chart_dimensions()
-
-        # Create chart grid
-        grid = self._create_line_chart_grid(chart_width, chart_height)
 
         # Get all values for range calculation
         all_values = []
@@ -331,31 +286,21 @@ class LineChart(BaseChart):
         if not all_values:
             return self._handle_empty_data()
 
-        # Characters for different series
-        line_chars = ['●', '◆', '▲', '■', '♦', '○', '◇', '△', '□', '◊']
+        # Calculate dimensions
+        chart_width = 60  # Fixed width for consistency
+        chart_height = 15  # Fixed height for consistency
+        y_axis_width = 8   # Width for Y-axis labels
 
-        # Plot each series
-        for series_idx, y_col in enumerate(self.y_columns):
-            column_name = y_col['column']
-            if column_name not in series_data:
-                continue
-
-            values = series_data[column_name]
-            if not values:
-                continue
-
-            # Normalize values to chart height
-            normalized_values = self._normalize_values_to_chart_height(values, chart_height)
-
-            # Use different character for each series
-            char = line_chars[series_idx % len(line_chars)]
-
-            # Plot this series
-            self._plot_series_points_and_lines(grid, labels, normalized_values,
-                                             chart_width, chart_height, char)
-
-        # Add axes
-        self._add_axes_to_grid(grid, chart_width, chart_height)
+        # Calculate value range with padding
+        min_val = min(all_values)
+        max_val = max(all_values)
+        
+        value_range = max_val - min_val
+        if value_range == 0:
+            value_range = 1
+        padding = value_range * 0.1
+        display_min = min_val - padding
+        display_max = max_val + padding
 
         # Build output
         chart_lines = []
@@ -368,54 +313,46 @@ class LineChart(BaseChart):
         # Add legend for multiple series
         if len(self.y_columns) > 1:
             legend_line = "  Legend: "
+            point_chars = ['●', '◆', '▲', '■', '♦']
             for i, y_col in enumerate(self.y_columns):
-                char = line_chars[i % len(line_chars)]
+                char = point_chars[i % len(point_chars)]
                 legend_line += f"{char} {y_col['label']}  "
             chart_lines.append(legend_line)
             chart_lines.append("")
 
-        # Convert grid to strings
-        for row in grid:
-            chart_lines.append(''.join(row))
+        # Create the chart
+        chart_grid = self._create_ascii_line_chart(labels, series_data, chart_width, chart_height, display_min, display_max)
+        
+        # Create Y-axis labels
+        y_labels = self._create_y_axis_labels(display_min, display_max, chart_height, y_axis_width)
 
-        # Add x-axis labels
-        x_labels = self._create_x_axis_labels(labels, chart_width)
+        # Combine Y-axis labels with chart grid
+        for i, row in enumerate(chart_grid):
+            if i < len(y_labels):
+                chart_lines.append(y_labels[i] + '│' + row)
+            else:
+                chart_lines.append(' ' * y_axis_width + '│' + row)
+
+        # Add X-axis line
+        x_axis_line = ' ' * y_axis_width + '└' + '─' * chart_width
+        chart_lines.append(x_axis_line)
+
+        # Add X-axis labels
+        x_labels = self._create_x_axis_labels(labels, chart_width, y_axis_width)
         if x_labels.strip():
             chart_lines.append(x_labels)
 
-        # Add y-axis info
-        y_info = self._create_y_axis_info(all_values)
-        if y_info:
+        # Add axis titles if configured
+        if self.x_axis_config.get('title'):
+            x_title = ' ' * (y_axis_width + chart_width // 2 - len(self.x_axis_config['title']) // 2) + self.x_axis_config['title']
             chart_lines.append("")
-            chart_lines.extend(y_info)
+            chart_lines.append(x_title)
 
-        # Add statistics if enabled
-        if self.style.get('show_stats', False):
-            stats = self._generate_stats(all_values)
+        if self.y_axis_config.get('title'):
             chart_lines.append("")
-            chart_lines.append(stats)
+            chart_lines.append(f"  Y-axis: {self.y_axis_config['title']}")
 
         return '\n'.join(chart_lines)
-    
-    def _generate_stats(self, values: List[float]) -> str:
-        """Generate statistics for the chart."""
-        if not values:
-            return ""
-        
-        total = sum(values)
-        avg = total / len(values)
-        max_val = max(values)
-        min_val = min(values)
-        
-        stats_lines = [
-            f"Points: {len(values)}",
-            f"Average: {self._format_value(avg)}",
-            f"Max: {self._format_value(max_val)}",
-            f"Min: {self._format_value(min_val)}"
-        ]
-        
-        return ' | '.join(stats_lines)
-
 
 # Register the line chart
 ChartRenderer.register_chart_class('line', LineChart)
