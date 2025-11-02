@@ -222,7 +222,7 @@ class DashboardCore:
                 vim.command(f'echo "DEBUG: Found {len(tasks)} running tasks"')
 
                 for task_id, task_info in tasks.items():
-                    vim.command(f'echo "DEBUG: Checking task {task_id}, temp_file: {task_info[\"temp_file\"]}"')
+                    vim.command(f'echo "DEBUG: Checking task {task_id}, temp_file: {task_info["temp_file"]}"')
                     if task_info['temp_file'] == current_file:
                         vim.command('echo "DEBUG: Found matching task, removing it"')
                         success = self.scheduler.remove_task(task_id)
@@ -753,7 +753,7 @@ def dashboard_sidebar_stop():
 
     except Exception as e:
         import traceback
-        error_msg = f"Error in dashboard_sidebar_stop: {str(e)}\\n{traceback.format_exc()}"
+        error_msg = f"Error in dashboard_sidebar_stop: {str(e)}\n{traceback.format_exc()}"
         vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
 
 def dashboard_cleanup():
