@@ -656,20 +656,36 @@ def dashboard_sidebar_stop():
 
                 # Close the temp file if it's open in any window
                 if os.path.exists(temp_file):
-                    # Find and close the buffer containing the temp file
-                    # First, check if the file is currently open in the right window
+                    # Normalize paths for comparison
+                    temp_file_normalized = os.path.normpath(temp_file)
+
+                    # First, try to close the buffer directly
+                    vim.command(f'silent! bwipeout {temp_file_normalized}')
+
+                    # Also check if the file is open in the right window and close it
                     vim.command('wincmd l')  # Switch to right window
-                    current_file = vim.current.buffer.name
-                    if current_file and os.path.samefile(current_file, temp_file):
-                        # If the dashboard file is open in the right window, close it
-                        vim.command('close')
-                        # Switch back to sidebar
+                    try:
+                        current_file = vim.current.buffer.name
+                        if current_file:
+                            current_file_normalized = os.path.normpath(current_file)
+                            # Check if the paths match (case-insensitive on Windows)
+                            if (os.name == 'nt' and
+                                current_file_normalized.lower() == temp_file_normalized.lower()) or \
+                               (os.name != 'nt' and
+                                current_file_normalized == temp_file_normalized):
+                                # If the dashboard file is open in the right window, close it
+                                vim.command('close')
+                                # Switch back to sidebar
+                                vim.command('wincmd h')
+                            else:
+                                # Switch back to sidebar
+                                vim.command('wincmd h')
+                        else:
+                            # Switch back to sidebar
+                            vim.command('wincmd h')
+                    except:
+                        # Switch back to sidebar in case of any error
                         vim.command('wincmd h')
-                    else:
-                        # Switch back to sidebar
-                        vim.command('wincmd h')
-                        # Close the buffer if it exists anywhere
-                        vim.command(f'silent! bwipeout {temp_file}')
 
                 # Refresh sidebar to update status
                 dashboard_browser()
