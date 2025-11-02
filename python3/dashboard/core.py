@@ -242,7 +242,22 @@ class DashboardCore:
                             vim.command('echohl MoreMsg | echo "Dashboard stopped, switched to remaining dashboard" | echohl None')
                         else:
                             # No remaining dashboards, close the current buffer
+                            vim.command('echohl MoreMsg | echo "DEBUG: No remaining dashboards, closing current buffer" | echohl None')
+
+                            # Get current buffer info for debugging
+                            current_buffer_name = vim.current.buffer.name
+                            current_buffer_number = vim.current.buffer.number
+                            vim.command(f'echohl MoreMsg | echo "DEBUG: Current buffer name: {current_buffer_name}" | echohl None')
+                            vim.command(f'echohl MoreMsg | echo "DEBUG: Current buffer number: {current_buffer_number}" | echohl None')
+
+                            # Try multiple methods to close the buffer
+                            vim.command('echohl MoreMsg | echo "DEBUG: Attempting bwipeout..." | echohl None')
                             vim.command('bwipeout')
+
+                            # Check if buffer still exists
+                            vim.command(f'echohl MoreMsg | echo "DEBUG: Buffer closed, checking if still exists..." | echohl None')
+                            vim.command(f'if bufexists({current_buffer_number}) | echo "DEBUG: Buffer still exists!" | else | echo "DEBUG: Buffer successfully closed" | endif')
+
                             vim.command('echohl MoreMsg | echo "Dashboard stopped" | echohl None')
 
                         # Refresh sidebar if it exists to update status
@@ -710,10 +725,31 @@ def dashboard_sidebar_stop():
             if existing_task:
                 # Get temp file path before stopping
                 temp_file = existing_task.get_temp_file_path()
+                vim.command(f'echohl MoreMsg | echo "DEBUG: Stopping dashboard for temp file: {temp_file}" | echohl None')
+
+                # Check if the temp file is currently open in any buffer
+                vim.command(f'''
+let g:temp_file_buffer = bufnr("{temp_file}")
+if g:temp_file_buffer != -1
+    echohl MoreMsg | echo "DEBUG: Temp file is open in buffer " . g:temp_file_buffer | echohl None
+else
+    echohl MoreMsg | echo "DEBUG: Temp file is not currently open in any buffer" | echohl None
+endif
+''')
 
                 # Stop the dashboard
                 core.stop_dashboard(full_path)
                 vim.command('echo "Dashboard stopped"')
+
+                # Check again if the temp file buffer still exists after stopping
+                vim.command(f'''
+let g:temp_file_buffer_after = bufnr("{temp_file}")
+if g:temp_file_buffer_after != -1
+    echohl MoreMsg | echo "DEBUG: After stop - temp file still in buffer " . g:temp_file_buffer_after | echohl None
+else
+    echohl MoreMsg | echo "DEBUG: After stop - temp file buffer successfully closed" | echohl None
+endif
+''')
 
 
 
