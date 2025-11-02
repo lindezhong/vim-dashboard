@@ -251,220 +251,59 @@ class DashboardCore:
                             vim.command('silent! checktime')
                             vim.command('redraw!')
 
-                            # Debug: Check current window before focus switch
-                            vim.command('echohl MoreMsg | echo "DEBUG: Before focus switch - Current window: " . winnr() . ", filetype: " . &filetype | echohl None')
-
                             # Immediately ensure focus is on the dashboard window after file switch
                             vim.command('wincmd l')  # Move to right window first
-                            vim.command('echohl MoreMsg | echo "DEBUG: After wincmd l - Current window: " . winnr() . ", filetype: " . &filetype | echohl None')
 
                             # Now close the old buffer (window layout is preserved since we have a new buffer)
                             vim.command(f'silent! bwipeout {current_buffer_number}')
-                            vim.command('echohl MoreMsg | echo "DEBUG: After bwipeout - Current window: " . winnr() . ", filetype: " . &filetype | echohl None')
 
                             # Final focus enforcement - find and switch to dashboard window
                             vim.command('''
-echohl MoreMsg | echo "DEBUG: Starting window search for dashboard filetype" | echohl None
-for i in range(1, winnr("$") + 1)
-  let ft = getwinvar(i, "&filetype")
-  echohl MoreMsg | echo "DEBUG: Window " . i . " filetype: " . ft | echohl None
-  if ft == "dashboard"
-    echohl MoreMsg | echo "DEBUG: Found dashboard window " . i . ", switching to it" | echohl None
-    execute i . "wincmd w"
-    echohl MoreMsg | echo "DEBUG: After switching to window " . i . " - Current window: " . winnr() . ", filetype: " . &filetype | echohl None
-    break
-  endif
-endfor
-''')
-
-                            # Additional debugging - check final state
-                            vim.command('echohl MoreMsg | echo "DEBUG: Final check - Current window: " . winnr() . ", filetype: " . &filetype . ", buffer name: " . bufname("%") | echohl None')
-
-                            # Try multiple focus enforcement methods
-                            vim.command('echohl MoreMsg | echo "DEBUG: Trying additional focus methods..." | echohl None')
-                            vim.command('wincmd p')  # Go to previous window
-                            vim.command('wincmd p')  # Go back (should be dashboard)
-                            vim.command('echohl MoreMsg | echo "DEBUG: After wincmd p x2 - Current window: " . winnr() . ", filetype: " . &filetype | echohl None')
-
-                            # Force cursor movement for visual feedback
-                            vim.command('normal! gg')
-                            vim.command('normal! G')
-                            vim.command('normal! gg')
-                            vim.command('echohl MoreMsg | echo "DEBUG: After cursor movement - Current window: " . winnr() . ", filetype: " . &filetype | echohl None')
-
-                            # Strong visual confirmation methods
-                            vim.command('echohl MoreMsg | echo "DEBUG: Applying strong visual confirmation..." | echohl None')
-
-                            # Method 1: Force redraw and refresh
-                            vim.command('redraw!')
-                            vim.command('redrawstatus!')
-
-                            # Method 2: Briefly highlight the current line
-                            vim.command('set cursorline')
-                            vim.command('redraw!')
-
-                            # Method 3: Flash the screen (brief mode change)
-                            vim.command('set number!')
-                            vim.command('redraw!')
-                            vim.command('set number!')
-                            vim.command('redraw!')
-
-                            # Method 4: Force enter insert mode and back to normal (creates visible change)
-                            vim.command('startinsert')
-                            vim.command('stopinsert')
-
-                            # Method 5: Move cursor in a visible pattern
-                            vim.command('normal! 0')  # Go to beginning of line
-                            vim.command('redraw!')
-                            vim.command('normal! $')  # Go to end of line
-                            vim.command('redraw!')
-                            vim.command('normal! 0')  # Back to beginning
-
-                            vim.command('echohl MoreMsg | echo "DEBUG: Strong visual confirmation completed" | echohl None')
-
-                            # Final comprehensive debugging
-                            vim.command('echohl MoreMsg | echo "DEBUG: === FINAL STATE ANALYSIS ===" | echohl None')
-                            vim.command('echohl MoreMsg | echo "DEBUG: Current window number: " . winnr() | echohl None')
-                            vim.command('echohl MoreMsg | echo "DEBUG: Total windows: " . winnr("$") | echohl None')
-                            vim.command('echohl MoreMsg | echo "DEBUG: Current buffer name: " . bufname("%") | echohl None')
-                            vim.command('echohl MoreMsg | echo "DEBUG: Current filetype: " . &filetype | echohl None')
-                            vim.command('echohl MoreMsg | echo "DEBUG: Current line number: " . line(".") | echohl None')
-                            vim.command('echohl MoreMsg | echo "DEBUG: Current column: " . col(".") | echohl None')
-                            vim.command('echohl MoreMsg | echo "DEBUG: Buffer modified: " . &modified | echohl None')
-                            vim.command('echohl MoreMsg | echo "DEBUG: Buffer readonly: " . &readonly | echohl None')
-                            vim.command('echohl MoreMsg | echo "DEBUG: Window width: " . winwidth(0) | echohl None')
-                            vim.command('echohl MoreMsg | echo "DEBUG: Window height: " . winheight(0) | echohl None')
-
-                            # Check if we can actually input in this window
-                            vim.command('echohl MoreMsg | echo "DEBUG: Testing input capability..." | echohl None')
-                            vim.command('let g:dashboard_test_mode = mode()')
-                            vim.command('echohl MoreMsg | echo "DEBUG: Current mode: " . g:dashboard_test_mode | echohl None')
-
-                            # Test if we can move cursor
-                            vim.command('let g:dashboard_old_line = line(".")')
-                            vim.command('normal! j')
-                            vim.command('let g:dashboard_new_line = line(".")')
-                            vim.command('echohl MoreMsg | echo "DEBUG: Cursor movement test - Old line: " . g:dashboard_old_line . ", New line: " . g:dashboard_new_line | echohl None')
-                            vim.command('normal! k')  # Move back
-
-                            # Check all windows and their properties
-                            vim.command('echohl MoreMsg | echo "DEBUG: === ALL WINDOWS ANALYSIS ===" | echohl None')
-                            vim.command('''
-for i in range(1, winnr("$") + 1)
-  let bufname = bufname(winbufnr(i))
-  let ft = getwinvar(i, "&filetype")
-  let modified = getwinvar(i, "&modified")
-  let readonly = getwinvar(i, "&readonly")
-  echohl MoreMsg | echo "DEBUG: Window " . i . ": " . bufname . " (ft=" . ft . ", mod=" . modified . ", ro=" . readonly . ")" | echohl None
-endfor
-''')
-
-                            # Fix window inconsistency - close any extra empty windows
-                            vim.command('echohl MoreMsg | echo "DEBUG: Fixing window inconsistency..." | echohl None')
-                            vim.command('''
-let total_windows = winnr("$")
-if total_windows > 2
-  echohl MoreMsg | echo "DEBUG: Found " . total_windows . " windows, should only have 2. Cleaning up..." | echohl None
-  for i in range(3, total_windows)
-    if winbufnr(i) > 0
-      let bufname = bufname(winbufnr(i))
-      let ft = getwinvar(i, "&filetype")
-      if ft == "" || bufname == ""
-        echohl MoreMsg | echo "DEBUG: Closing empty window " . i | echohl None
-        execute i . "wincmd w"
-        close
-      endif
-    endif
-  endfor
-endif
-''')
-
-                            # Final focus enforcement after cleanup
-                            vim.command('echohl MoreMsg | echo "DEBUG: Final focus enforcement after cleanup..." | echohl None')
-                            vim.command('''
 for i in range(1, winnr("$") + 1)
   let ft = getwinvar(i, "&filetype")
   if ft == "dashboard"
-    echohl MoreMsg | echo "DEBUG: Switching to dashboard window " . i | echohl None
     execute i . "wincmd w"
     break
   endif
 endfor
 ''')
 
-                            # Force focus and make it obvious - AGGRESSIVE APPROACH
-                            vim.command('echohl MoreMsg | echo "DEBUG: Making focus obvious..." | echohl None')
-
-                            # Method 1: Multiple forced window switches
-                            vim.command('echohl MoreMsg | echo "DEBUG: Aggressive window switching..." | echohl None')
+                            # Multiple forced window switches for reliable focus
                             vim.command('wincmd h')  # Go to left window
                             vim.command('wincmd l')  # Go back to right window
                             vim.command('wincmd h')  # Go to left window again
                             vim.command('wincmd l')  # Go back to right window again
 
-                            # Method 2: Force focus using window ID
-                            vim.command('echohl MoreMsg | echo "DEBUG: Using window ID method..." | echohl None')
+                            # Force focus using window ID
                             vim.command('''
 let dashboard_win_id = 0
 for i in range(1, winnr("$") + 1)
   if getwinvar(i, "&filetype") == "dashboard"
     let dashboard_win_id = win_getid(i)
-    echohl MoreMsg | echo "DEBUG: Found dashboard window ID: " . dashboard_win_id | echohl None
     break
   endif
 endfor
 if dashboard_win_id > 0
   call win_gotoid(dashboard_win_id)
-  echohl MoreMsg | echo "DEBUG: Switched to window ID: " . dashboard_win_id | echohl None
 endif
 ''')
 
-                            # Method 3: Force cursor visibility
-                            vim.command('echohl MoreMsg | echo "DEBUG: Force cursor visibility..." | echohl None')
-                            vim.command('normal! gg')
-                            vim.command('normal! zz')  # Center the screen
-                            vim.command('set cursorline')
-                            vim.command('redraw!')
-
-                            # Method 4: Enter and exit insert mode to force cursor update
-                            vim.command('echohl MoreMsg | echo "DEBUG: Force cursor update..." | echohl None')
-                            vim.command('startinsert')
-                            vim.command('stopinsert')
-                            vim.command('redraw!')
-
-                            # Method 5: Force window refresh
-                            vim.command('echohl MoreMsg | echo "DEBUG: Force window refresh..." | echohl None')
-                            vim.command('wincmd =')  # Equalize window sizes
-                            vim.command('redraw!')
-
-                            # Method 6: Final verification and force
-                            vim.command('echohl MoreMsg | echo "DEBUG: Final verification..." | echohl None')
-                            vim.command('echohl MoreMsg | echo "DEBUG: Current window after all fixes: " . winnr() . ", filetype: " . &filetype | echohl None')
-                            vim.command('echohl MoreMsg | echo "DEBUG: Cursor position: line " . line(".") . ", col " . col(".") | echohl None')
-
-                            # Method 7: ULTIMATE FOCUS ENFORCEMENT - Use timer for delayed execution
-                            vim.command('echohl MoreMsg | echo "DEBUG: ULTIMATE focus enforcement with timer..." | echohl None')
+                            # Ultimate focus enforcement function
                             vim.command('''
 function! UltimateFocusEnforcement()
-  " Find dashboard window again
   for i in range(1, winnr("$") + 1)
     if getwinvar(i, "&filetype") == "dashboard"
       execute i . "wincmd w"
-      " Force multiple redraws
       redraw!
       redrawstatus!
-      " Force cursor to be visible
       normal! gg
       normal! zz
       set cursorline
-      " Enter and exit insert mode multiple times
       startinsert
       stopinsert
       startinsert
       stopinsert
-      " Final redraw
       redraw!
-      echohl MoreMsg | echo "DEBUG: ULTIMATE focus applied to window " . i | echohl None
       break
     endif
   endfor
@@ -472,21 +311,16 @@ endfunction
 call UltimateFocusEnforcement()
 ''')
 
-                            # Method 8: Use feedkeys to simulate user input
-                            vim.command('echohl MoreMsg | echo "DEBUG: Using feedkeys simulation..." | echohl None')
-                            vim.command("call feedkeys(\"\\<C-w>l\", 'n')")  # Simulate Ctrl+W L
-                            vim.command('redraw!')
+                            # Use feedkeys to simulate user input
+                            vim.command("call feedkeys(\"\\<C-w>l\", 'n')")
 
-                            # Method 9: Force focus using autocmd
-                            vim.command('echohl MoreMsg | echo "DEBUG: Setting up autocmd focus..." | echohl None')
+                            # Force focus using autocmd
                             vim.command('''
 augroup DashboardFocus
   autocmd!
   autocmd CursorMoved * if &filetype == "dashboard" | set cursorline | endif
 augroup END
 ''')
-
-                            vim.command('echohl MoreMsg | echo "DEBUG: Focus fix completed - Current window: " . winnr() . ", filetype: " . &filetype | echohl None')
 
                             vim.command('echohl MoreMsg | echo "Dashboard stopped, switched to remaining dashboard" | echohl None')
                         else:
