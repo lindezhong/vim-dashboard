@@ -442,6 +442,50 @@ endif
                             vim.command('echohl MoreMsg | echo "DEBUG: Current window after all fixes: " . winnr() . ", filetype: " . &filetype | echohl None')
                             vim.command('echohl MoreMsg | echo "DEBUG: Cursor position: line " . line(".") . ", col " . col(".") | echohl None')
 
+                            # Method 7: ULTIMATE FOCUS ENFORCEMENT - Use timer for delayed execution
+                            vim.command('echohl MoreMsg | echo "DEBUG: ULTIMATE focus enforcement with timer..." | echohl None')
+                            vim.command('''
+function! UltimateFocusEnforcement()
+  " Find dashboard window again
+  for i in range(1, winnr("$") + 1)
+    if getwinvar(i, "&filetype") == "dashboard"
+      execute i . "wincmd w"
+      " Force multiple redraws
+      redraw!
+      redrawstatus!
+      " Force cursor to be visible
+      normal! gg
+      normal! zz
+      set cursorline
+      " Enter and exit insert mode multiple times
+      startinsert
+      stopinsert
+      startinsert
+      stopinsert
+      " Final redraw
+      redraw!
+      echohl MoreMsg | echo "DEBUG: ULTIMATE focus applied to window " . i | echohl None
+      break
+    endif
+  endfor
+endfunction
+call UltimateFocusEnforcement()
+''')
+
+                            # Method 8: Use feedkeys to simulate user input
+                            vim.command('echohl MoreMsg | echo "DEBUG: Using feedkeys simulation..." | echohl None')
+                            vim.command("call feedkeys(\"\\<C-w>l\", 'n')")  # Simulate Ctrl+W L
+                            vim.command('redraw!')
+
+                            # Method 9: Force focus using autocmd
+                            vim.command('echohl MoreMsg | echo "DEBUG: Setting up autocmd focus..." | echohl None')
+                            vim.command('''
+augroup DashboardFocus
+  autocmd!
+  autocmd CursorMoved * if &filetype == "dashboard" | set cursorline | endif
+augroup END
+''')
+
                             vim.command('echohl MoreMsg | echo "DEBUG: Focus fix completed - Current window: " . winnr() . ", filetype: " . &filetype | echohl None')
 
                             vim.command('echohl MoreMsg | echo "Dashboard stopped, switched to remaining dashboard" | echohl None')
