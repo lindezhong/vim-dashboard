@@ -27,6 +27,9 @@ except ImportError:
         @staticmethod
         def command(cmd):
             pass
+        @staticmethod
+        def eval(expr):
+            return []
     vim = MockVim()
 from .config import ConfigManager
 from .scheduler import get_scheduler, cleanup_scheduler
@@ -460,36 +463,49 @@ def dashboard_open_selected():
 def dashboard_sidebar_select():
     """Handle selection from sidebar."""
     try:
+        # Debug: Show that function is called
+        vim.command('echo "DEBUG: dashboard_sidebar_select called"')
+
         # Get current line number
         line_num = vim.current.window.cursor[0]
+        vim.command(f'echo "DEBUG: Current line: {line_num}"')
 
         # Get config files from vim variable
         try:
             config_files = vim.eval('g:dashboard_config_files')
             if not isinstance(config_files, list):
                 config_files = []
-        except:
+        except Exception as e:
+            vim.command(f'echo "DEBUG: Error getting config_files: {str(e)}"')
             config_files = []
         try:
             config_dir = vim.eval('g:dashboard_config_dir')
             if not isinstance(config_dir, str):
                 config_dir = ''
-        except:
+        except Exception as e:
+            vim.command(f'echo "DEBUG: Error getting config_dir: {str(e)}"')
             config_dir = ''
+
+        vim.command(f'echo "DEBUG: Config files: {len(config_files)} items"')
+        vim.command(f'echo "DEBUG: Config dir: {config_dir}"')
 
         # Calculate selected index (skip header lines)
         # Sidebar format: title + directory + empty + help1 + help2 + empty = 6 lines, then files start
         selected_index = line_num - 7  # Files start from line 7 (6 header lines + 1 for 0-based)
+        vim.command(f'echo "DEBUG: Selected index: {selected_index}"')
 
         if 0 <= selected_index < len(config_files):
             selected_file = config_files[selected_index]
             full_path = os.path.join(config_dir, selected_file)
+            vim.command(f'echo "DEBUG: Selected file: {selected_file}"')
+            vim.command(f'echo "DEBUG: Full path: {full_path}"')
 
             # Check if dashboard is already running for this config
             core = get_dashboard_core()
             existing_task = core.scheduler.get_task_by_config_file(full_path)
 
             if existing_task:
+                vim.command('echo "DEBUG: Dashboard is running, opening temp file"')
                 # Dashboard is running, open the temp file
                 temp_file = existing_task.get_temp_file_path()
                 if os.path.exists(temp_file):
@@ -507,9 +523,11 @@ def dashboard_sidebar_select():
                     vim.command('setlocal readonly')
                     # Use the dashboard buffer setup function
                     vim.command('call dashboard#setup_dashboard_buffer()')
+                    vim.command('echo "Dashboard file opened"')
                 else:
                     vim.command('echohl ErrorMsg | echo "Dashboard temp file not found" | echohl None')
             else:
+                vim.command('echo "DEBUG: Dashboard not running, starting it"')
                 # Dashboard not running, start it
                 # Switch to right window first
                 vim.command('wincmd l')
@@ -519,39 +537,47 @@ def dashboard_sidebar_select():
                 vim.command('wincmd h')
                 dashboard_browser()
         else:
-            vim.command('echohl ErrorMsg | echo "Invalid selection" | echohl None')
+            vim.command(f'echohl ErrorMsg | echo "Invalid selection: {selected_index} not in range 0-{len(config_files)-1}" | echohl None')
 
     except Exception as e:
-        error_msg = format_error_message(e, "Dashboard Sidebar Selection")
+        import traceback
+        error_msg = f"Error in dashboard_sidebar_select: {str(e)}\\n{traceback.format_exc()}"
         vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
 
 
 def dashboard_sidebar_restart():
     """Restart selected dashboard from sidebar."""
     try:
+        vim.command('echo "DEBUG: dashboard_sidebar_restart called"')
+
         # Get current line number
         line_num = vim.current.window.cursor[0]
+        vim.command(f'echo "DEBUG: Current line: {line_num}"')
 
         # Get config files from vim variable
         try:
             config_files = vim.eval('g:dashboard_config_files')
             if not isinstance(config_files, list):
                 config_files = []
-        except:
+        except Exception as e:
+            vim.command(f'echo "DEBUG: Error getting config_files: {str(e)}"')
             config_files = []
         try:
             config_dir = vim.eval('g:dashboard_config_dir')
             if not isinstance(config_dir, str):
                 config_dir = ''
-        except:
+        except Exception as e:
+            vim.command(f'echo "DEBUG: Error getting config_dir: {str(e)}"')
             config_dir = ''
 
         # Calculate selected index (skip header lines)
         selected_index = line_num - 7  # Files start from line 7
+        vim.command(f'echo "DEBUG: Selected index: {selected_index}"')
 
         if 0 <= selected_index < len(config_files):
             selected_file = config_files[selected_index]
             full_path = os.path.join(config_dir, selected_file)
+            vim.command(f'echo "DEBUG: Restarting: {selected_file}"')
 
             # Check if dashboard is running for this config
             core = get_dashboard_core()
@@ -567,38 +593,46 @@ def dashboard_sidebar_restart():
             else:
                 vim.command('echohl WarningMsg | echo "Dashboard not running for this config" | echohl None')
         else:
-            vim.command('echohl ErrorMsg | echo "Invalid selection" | echohl None')
+            vim.command(f'echohl ErrorMsg | echo "Invalid selection: {selected_index} not in range 0-{len(config_files)-1}" | echohl None')
 
     except Exception as e:
-        error_msg = format_error_message(e, "Dashboard Sidebar Restart")
+        import traceback
+        error_msg = f"Error in dashboard_sidebar_restart: {str(e)}\\n{traceback.format_exc()}"
         vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
 
 def dashboard_sidebar_stop():
     """Stop selected dashboard from sidebar."""
     try:
+        vim.command('echo "DEBUG: dashboard_sidebar_stop called"')
+
         # Get current line number
         line_num = vim.current.window.cursor[0]
+        vim.command(f'echo "DEBUG: Current line: {line_num}"')
 
         # Get config files from vim variable
         try:
             config_files = vim.eval('g:dashboard_config_files')
             if not isinstance(config_files, list):
                 config_files = []
-        except:
+        except Exception as e:
+            vim.command(f'echo "DEBUG: Error getting config_files: {str(e)}"')
             config_files = []
         try:
             config_dir = vim.eval('g:dashboard_config_dir')
             if not isinstance(config_dir, str):
                 config_dir = ''
-        except:
+        except Exception as e:
+            vim.command(f'echo "DEBUG: Error getting config_dir: {str(e)}"')
             config_dir = ''
 
         # Calculate selected index (skip header lines)
         selected_index = line_num - 7  # Files start from line 7
+        vim.command(f'echo "DEBUG: Selected index: {selected_index}"')
 
         if 0 <= selected_index < len(config_files):
             selected_file = config_files[selected_index]
             full_path = os.path.join(config_dir, selected_file)
+            vim.command(f'echo "DEBUG: Stopping: {selected_file}"')
 
             # Check if dashboard is running for this config
             core = get_dashboard_core()
@@ -622,10 +656,11 @@ def dashboard_sidebar_stop():
             else:
                 vim.command('echohl WarningMsg | echo "Dashboard not running for this config" | echohl None')
         else:
-            vim.command('echohl ErrorMsg | echo "Invalid selection" | echohl None')
+            vim.command(f'echohl ErrorMsg | echo "Invalid selection: {selected_index} not in range 0-{len(config_files)-1}" | echohl None')
 
     except Exception as e:
-        error_msg = format_error_message(e, "Dashboard Sidebar Stop")
+        import traceback
+        error_msg = f"Error in dashboard_sidebar_stop: {str(e)}\\n{traceback.format_exc()}"
         vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
 
 def dashboard_cleanup():
