@@ -340,9 +340,9 @@ endfor
             vim.current.buffer[:] = lines
 
             # Set up key mappings
-            vim.command('nnoremap <buffer> <CR> :silent python3 import dashboard.core; dashboard.core.dashboard_sidebar_select()<CR>')
+            vim.command('nnoremap <buffer> <silent> <CR> :python3 import dashboard.core; dashboard.core.dashboard_sidebar_select()<CR>')
             vim.command('nnoremap <buffer> q :quit<CR>')
-            vim.command('nnoremap <buffer> r :silent python3 import dashboard.core; dashboard.core.dashboard_browser()<CR>')
+            vim.command('nnoremap <buffer> <silent> r :python3 import dashboard.core; dashboard.core.dashboard_browser()<CR>')
 
             # Store config files and directory for selection
             # Escape special characters in paths for vim
