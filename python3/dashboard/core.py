@@ -342,7 +342,8 @@ endfor
             # Set up key mappings
             vim.command('nnoremap <buffer> <silent> <CR> :python3 import dashboard.core; dashboard.core.dashboard_sidebar_select()<CR>')
             vim.command('nnoremap <buffer> q :quit<CR>')
-            vim.command('nnoremap <buffer> <silent> r :python3 import dashboard.core; dashboard.core.dashboard_browser()<CR>')
+            vim.command('nnoremap <buffer> <silent> r :python3 import dashboard.core; dashboard.core.dashboard_sidebar_restart()<CR>')
+            vim.command('nnoremap <buffer> <silent> t :python3 import dashboard.core; dashboard.core.dashboard_sidebar_stop()<CR>')
 
             # Store config files and directory for selection
             # Escape special characters in paths for vim
@@ -524,6 +525,108 @@ def dashboard_sidebar_select():
         error_msg = format_error_message(e, "Dashboard Sidebar Selection")
         vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
 
+
+def dashboard_sidebar_restart():
+    """Restart selected dashboard from sidebar."""
+    try:
+        # Get current line number
+        line_num = vim.current.window.cursor[0]
+
+        # Get config files from vim variable
+        try:
+            config_files = vim.eval('g:dashboard_config_files')
+            if not isinstance(config_files, list):
+                config_files = []
+        except:
+            config_files = []
+        try:
+            config_dir = vim.eval('g:dashboard_config_dir')
+            if not isinstance(config_dir, str):
+                config_dir = ''
+        except:
+            config_dir = ''
+
+        # Calculate selected index (skip header lines)
+        selected_index = line_num - 7  # Files start from line 7
+
+        if 0 <= selected_index < len(config_files):
+            selected_file = config_files[selected_index]
+            full_path = os.path.join(config_dir, selected_file)
+
+            # Check if dashboard is running for this config
+            core = get_dashboard_core()
+            existing_task = core.scheduler.get_task_by_config_file(full_path)
+
+            if existing_task:
+                # Restart the dashboard
+                core.scheduler.restart_task_by_config_file(full_path)
+                vim.command('echo "Dashboard restarted"')
+
+                # Refresh sidebar to update status
+                dashboard_browser()
+            else:
+                vim.command('echohl WarningMsg | echo "Dashboard not running for this config" | echohl None')
+        else:
+            vim.command('echohl ErrorMsg | echo "Invalid selection" | echohl None')
+
+    except Exception as e:
+        error_msg = format_error_message(e, "Dashboard Sidebar Restart")
+        vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
+
+def dashboard_sidebar_stop():
+    """Stop selected dashboard from sidebar."""
+    try:
+        # Get current line number
+        line_num = vim.current.window.cursor[0]
+
+        # Get config files from vim variable
+        try:
+            config_files = vim.eval('g:dashboard_config_files')
+            if not isinstance(config_files, list):
+                config_files = []
+        except:
+            config_files = []
+        try:
+            config_dir = vim.eval('g:dashboard_config_dir')
+            if not isinstance(config_dir, str):
+                config_dir = ''
+        except:
+            config_dir = ''
+
+        # Calculate selected index (skip header lines)
+        selected_index = line_num - 7  # Files start from line 7
+
+        if 0 <= selected_index < len(config_files):
+            selected_file = config_files[selected_index]
+            full_path = os.path.join(config_dir, selected_file)
+
+            # Check if dashboard is running for this config
+            core = get_dashboard_core()
+            existing_task = core.scheduler.get_task_by_config_file(full_path)
+
+            if existing_task:
+                # Get temp file path before stopping
+                temp_file = existing_task.get_temp_file_path()
+
+                # Stop the dashboard
+                core.stop_dashboard(full_path)
+                vim.command('echo "Dashboard stopped"')
+
+                # Close the temp file if it's open in any window
+                if os.path.exists(temp_file):
+                    # Find and close the buffer containing the temp file
+                    vim.command(f'silent! bwipeout {temp_file}')
+
+                # Refresh sidebar to update status
+                dashboard_browser()
+            else:
+                vim.command('echohl WarningMsg | echo "Dashboard not running for this config" | echohl None')
+        else:
+            vim.command('echohl ErrorMsg | echo "Invalid selection" | echohl None')
+
+    except Exception as e:
+        error_msg = format_error_message(e, "Dashboard Sidebar Stop")
+        vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
 
 def dashboard_cleanup():
     """Cleanup dashboard on vim exit."""
