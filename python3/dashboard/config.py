@@ -46,8 +46,6 @@ class ConfigManager:
             # Pass the args from query.args to the template processor
             config_with_args = {'args': query_config['args']}
             self.template_processor.process_config_parameters(config_with_args)
-            # Apply default values to template processor
-            self.template_processor.apply_defaults()
 
         self.config = config
         self.config_path = config_path

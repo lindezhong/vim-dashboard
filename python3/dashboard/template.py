@@ -213,14 +213,14 @@ class SQLTemplateEngine:
         
         # Check for SQL injection patterns
         injection_patterns = [
-            r'--',  # SQL comments
-            r'/\*.*\*/',  # Multi-line comments
-            r';\s*\w',  # Multiple statements
+            r';\s*\w',  # Multiple statements (potential injection)
         ]
-        
+
         for pattern in injection_patterns:
             if re.search(pattern, sql, re.IGNORECASE | re.DOTALL):
                 raise ValueError(f"Potentially dangerous SQL pattern detected: {pattern}")
+
+        # Allow SQL comments (-- and /* */) as they are legitimate SQL syntax
     
     def validate_template(self, template_str: str) -> tuple[bool, Optional[str]]:
         """
@@ -291,12 +291,16 @@ class ParameterManager:
                     raise ValueError(f"Required parameter '{param_name}' is missing")
                 value = param_def['default']
             
-            # Validate type
+            # Always add parameter to context, even if None (for optional parameters)
+            # This allows Jinja2 templates to use default filters like {{ param | default("") }}
             if value is not None:
                 validated_value = self._validate_parameter_type(
                     param_name, value, param_def['type']
                 )
                 context[param_name] = validated_value
+            else:
+                # Add None for optional parameters without defaults
+                context[param_name] = None
         
         # Add any extra arguments (with warning)
         for arg_name, arg_value in args.items():
@@ -385,10 +389,13 @@ class SQLTemplateProcessor:
         args_config = config.get('args', [])
         
         for arg_def in args_config:
-            if not isinstance(arg_def, dict) or 'key' not in arg_def:
+            if not isinstance(arg_def, dict):
                 continue
-            
-            param_name = arg_def['key']
+
+            # Support both 'name' and 'key' fields for parameter name
+            param_name = arg_def.get('name') or arg_def.get('key')
+            if not param_name:
+                continue
             param_type = arg_def.get('type', 'string')
             default_value = arg_def.get('default')
             description = arg_def.get('description', '')
