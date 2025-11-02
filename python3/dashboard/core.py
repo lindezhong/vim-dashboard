@@ -231,19 +231,12 @@ class DashboardCore:
                             current_buffer_number = vim.current.buffer.number
                             vim.command(f'echohl MoreMsg | echo "DEBUG: Before switch - Current buffer: {current_buffer_name} (#{current_buffer_number})" | echohl None')
 
-                            # Close current buffer first
-                            vim.command('echohl MoreMsg | echo "DEBUG: Closing current buffer before switching" | echohl None')
-                            vim.command('bwipeout')
-
-                            # Check if current buffer was closed
-                            vim.command(f'if bufexists({current_buffer_number}) | echo "DEBUG: Original buffer still exists after bwipeout!" | else | echo "DEBUG: Original buffer successfully closed" | endif')
-
-                            # Switch to the first remaining dashboard
+                            # Switch to the first remaining dashboard first
                             first_remaining_task = next(iter(remaining_tasks.values()))
                             remaining_temp_file = first_remaining_task['temp_file']
                             vim.command(f'echohl MoreMsg | echo "DEBUG: Switching to remaining dashboard: {remaining_temp_file}" | echohl None')
 
-                            # Switch to the remaining dashboard file
+                            # Switch to the remaining dashboard file first (this preserves window layout)
                             vim.command('set autoread')
                             vim.command(f'silent edit {remaining_temp_file}')
                             vim.command('setlocal filetype=dashboard')
@@ -252,6 +245,13 @@ class DashboardCore:
                             vim.command('setlocal buftype=nowrite')
                             vim.command('setlocal readonly')
                             vim.command('call dashboard#setup_dashboard_buffer()')
+
+                            # Now close the old buffer (window layout is preserved since we have a new buffer)
+                            vim.command('echohl MoreMsg | echo "DEBUG: Closing old buffer after switching" | echohl None')
+                            vim.command(f'silent! bwipeout {current_buffer_number}')
+
+                            # Check if old buffer was closed
+                            vim.command(f'if bufexists({current_buffer_number}) | echo "DEBUG: Old buffer still exists after bwipeout!" | else | echo "DEBUG: Old buffer successfully closed" | endif')
 
                             vim.command('echohl MoreMsg | echo "Dashboard stopped, switched to remaining dashboard" | echohl None')
                         else:
