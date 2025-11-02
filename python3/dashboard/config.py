@@ -46,6 +46,8 @@ class ConfigManager:
             # Pass the args from query.args to the template processor
             config_with_args = {'args': query_config['args']}
             self.template_processor.process_config_parameters(config_with_args)
+            # Apply default values to template processor
+            self.template_processor.apply_defaults()
 
         self.config = config
         self.config_path = config_path
@@ -166,7 +168,7 @@ class ConfigManager:
         return self.config.get('database', {})
     
     def get_query(self) -> str:
-        """Get SQL query."""
+        """Get SQL query with template rendering if needed."""
         if not self.config:
             raise ValueError("No configuration loaded")
 
@@ -174,9 +176,18 @@ class ConfigManager:
 
         # Support both old format (query as string) and new format (query as dict with sql)
         if isinstance(query_config, dict):
-            return query_config.get('sql', '')
+            query_template = query_config.get('sql', '')
         else:
-            return query_config
+            query_template = query_config
+
+        # If template processor is available, render the template
+        if self.template_processor and query_template:
+            try:
+                return self.template_processor.render_sql(query_template)
+            except Exception as e:
+                raise ValueError(f"Template rendering error: {e}")
+
+        return query_template
     
     def get_interval_seconds(self) -> int:
         """Get refresh interval in seconds."""

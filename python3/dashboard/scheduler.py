@@ -174,17 +174,11 @@ class DashboardTask:
 
             connection = self.db_manager.get_connection(db_url)
 
-            # Execute query
-            query_config = self.config.get('query')
-            if not query_config:
-                raise ValueError("Query not configured")
+            # Load and process configuration with template engine
+            self.config_manager.load_config(self.config_file)
 
-            # Support both old format (query as string) and new format (query as dict with sql)
-            if isinstance(query_config, dict):
-                query = query_config.get('sql', '')
-            else:
-                query = query_config
-
+            # Get rendered SQL query (with template processing if needed)
+            query = self.config_manager.get_query()
             if not query:
                 raise ValueError("SQL query not found in configuration")
 
