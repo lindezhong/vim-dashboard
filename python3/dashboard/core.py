@@ -348,8 +348,9 @@ endfor
             # Escape special characters in paths for vim
             escaped_dir = dashboard_dir.replace('\\', '\\\\').replace('"', '\\"')
 
-            # Convert Python list to vim list format
-            vim_list = '[' + ','.join(f'"{f}"' for f in config_files) + ']'
+            # Convert Python list to vim list format (use sorted list to match sidebar display)
+            sorted_config_files = sorted(config_files)
+            vim_list = '[' + ','.join(f'"{f}"' for f in sorted_config_files) + ']'
 
             vim.command(f'let g:dashboard_config_files = {vim_list}')
             vim.command(f'let g:dashboard_config_dir = "{escaped_dir}"')
