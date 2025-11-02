@@ -259,7 +259,8 @@ endfor
                                 vim.command('setlocal buftype=nofile')
                                 vim.command('setlocal noswapfile')
                                 vim.command('setlocal nobuflisted')
-                                vim.command('file *')
+                                # Use a safe way to name the buffer as "*"
+                                vim.command('silent! file [Dashboard]')
                                 vim.current.buffer[:] = ['', '  No active dashboard', '  Select a configuration from the sidebar', '']
                                 vim.command('setlocal readonly')
                                 vim.command('setlocal nomodifiable')
