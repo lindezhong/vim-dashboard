@@ -695,53 +695,7 @@ def dashboard_sidebar_stop():
                 core.stop_dashboard(full_path)
                 vim.command('echo "Dashboard stopped"')
 
-                # Close the temp file if it's open in any window
-                if os.path.exists(temp_file):
-                    # Normalize paths for comparison
-                    temp_file_normalized = os.path.normpath(temp_file)
 
-                    # First, try to close the buffer directly
-                    vim.command(f'silent! bwipeout {temp_file_normalized}')
-
-                    # Also check if the file is open in the right window and replace it with empty buffer
-                    vim.command('wincmd l')  # Switch to right window
-                    try:
-                        current_file = vim.current.buffer.name
-                        if current_file:
-                            current_file_normalized = os.path.normpath(current_file)
-                            # Check if the paths match (case-insensitive on Windows)
-                            if (os.name == 'nt' and
-                                current_file_normalized.lower() == temp_file_normalized.lower()) or \
-                               (os.name != 'nt' and
-                                current_file_normalized == temp_file_normalized):
-                                # If the dashboard file is open in the right window, replace content with empty buffer
-                                # First check if we have multiple windows to avoid closing the last window
-                                vim.command('let g:dashboard_window_count = winnr("$")')
-                                window_count = int(vim.eval('g:dashboard_window_count'))
-
-                                if window_count > 1:
-                                    # Safe to replace buffer content
-                                    vim.current.buffer[:] = ['']  # Clear buffer content
-                                    vim.command('setlocal buftype=nofile')
-                                    vim.command('setlocal noswapfile')
-                                    vim.command('setlocal nomodified')
-                                    vim.command('file [Dashboard Stopped]')  # Set buffer name
-                                else:
-                                    # Only one window, just clear content but keep file
-                                    vim.current.buffer[:] = ['Dashboard stopped. Window preserved.']
-                                    vim.command('setlocal nomodified')
-
-                                # Switch back to sidebar
-                                vim.command('wincmd h')
-                            else:
-                                # Switch back to sidebar
-                                vim.command('wincmd h')
-                        else:
-                            # Switch back to sidebar
-                            vim.command('wincmd h')
-                    except:
-                        # Switch back to sidebar in case of any error
-                        vim.command('wincmd h')
 
                 # Refresh sidebar to update status
                 dashboard_browser()
