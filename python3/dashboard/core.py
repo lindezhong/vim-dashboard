@@ -226,9 +226,22 @@ class DashboardCore:
                     success = self.scheduler.remove_task(current_task_id)
                     if success:
                         if remaining_tasks:
+                            # Get current buffer info before closing
+                            current_buffer_name = vim.current.buffer.name
+                            current_buffer_number = vim.current.buffer.number
+                            vim.command(f'echohl MoreMsg | echo "DEBUG: Before switch - Current buffer: {current_buffer_name} (#{current_buffer_number})" | echohl None')
+
+                            # Close current buffer first
+                            vim.command('echohl MoreMsg | echo "DEBUG: Closing current buffer before switching" | echohl None')
+                            vim.command('bwipeout')
+
+                            # Check if current buffer was closed
+                            vim.command(f'if bufexists({current_buffer_number}) | echo "DEBUG: Original buffer still exists after bwipeout!" | else | echo "DEBUG: Original buffer successfully closed" | endif')
+
                             # Switch to the first remaining dashboard
                             first_remaining_task = next(iter(remaining_tasks.values()))
                             remaining_temp_file = first_remaining_task['temp_file']
+                            vim.command(f'echohl MoreMsg | echo "DEBUG: Switching to remaining dashboard: {remaining_temp_file}" | echohl None')
 
                             # Switch to the remaining dashboard file
                             vim.command('set autoread')
