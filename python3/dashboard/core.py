@@ -72,9 +72,16 @@ class DashboardCore:
                 # Open existing temp file
                 temp_file = existing_task.get_temp_file_path()
                 if os.path.exists(temp_file):
+                    # Set autoread and disable file change warnings before opening
+                    vim.command('set autoread')
                     vim.command(f'silent edit {temp_file}')
                     # Set filetype to dashboard for syntax highlighting
                     vim.command('setlocal filetype=dashboard')
+                    # Set buffer options to handle external changes silently
+                    vim.command('setlocal autoread')
+                    vim.command('setlocal noswapfile')
+                    vim.command('setlocal buftype=nowrite')
+                    vim.command('setlocal readonly')
                     # Use the new dashboard buffer setup function
                     vim.command('call dashboard#setup_dashboard_buffer()')
                 return True
@@ -91,9 +98,16 @@ class DashboardCore:
             task = self.scheduler.get_task(task_id)
             if task:
                 temp_file = task.get_temp_file_path()
+                # Set autoread and disable file change warnings before opening
+                vim.command('set autoread')
                 vim.command(f'silent edit {temp_file}')
                 # Set filetype to dashboard for syntax highlighting
                 vim.command('setlocal filetype=dashboard')
+                # Set buffer options to handle external changes silently
+                vim.command('setlocal autoread')
+                vim.command('setlocal noswapfile')
+                vim.command('setlocal buftype=nowrite')
+                vim.command('setlocal readonly')
                 # Use the new dashboard buffer setup function
                 vim.command('call dashboard#setup_dashboard_buffer()')
 
@@ -478,9 +492,16 @@ def dashboard_sidebar_select():
                 if os.path.exists(temp_file):
                     # Switch to right window and open temp file
                     vim.command('wincmd l')
-                    vim.command(f'edit {temp_file}')
+                    # Set autoread and disable file change warnings before opening
+                    vim.command('set autoread')
+                    vim.command(f'silent edit {temp_file}')
                     # Set filetype to dashboard for syntax highlighting
                     vim.command('setlocal filetype=dashboard')
+                    # Set buffer options to handle external changes silently
+                    vim.command('setlocal autoread')
+                    vim.command('setlocal noswapfile')
+                    vim.command('setlocal buftype=nowrite')
+                    vim.command('setlocal readonly')
                     # Use the dashboard buffer setup function
                     vim.command('call dashboard#setup_dashboard_buffer()')
                 else:
