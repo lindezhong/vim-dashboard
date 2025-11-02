@@ -2,8 +2,8 @@
 # 展示所有支持的参数类型和模板语法功能
 
 database:
-  type: mysql
-  url: mysql://username:password@host:port/database_name
+  type: sqlite
+  url: "sqlite:///:memory:"
 
 # 查询配置 - 包含SQL模板和参数定义
 query:
@@ -56,16 +56,33 @@ query:
       type: string
       description: "搜索关键词（可选）"
 
-  # 使用Jinja2模板语法的SQL查询
+  # 使用Jinja2模板语法的SQL查询 - SQLite内存数据库示例
   sql: |
+    WITH sample_users AS (
+      SELECT 1 as id, 'Alice' as name, 25 as age, 'IT' as department, 
+             '{{ user_status }}' as status, datetime('now', '-30 days') as created_at
+      UNION ALL
+      SELECT 2, 'Bob', 32, 'HR', 'active', datetime('now', '-25 days')
+      UNION ALL  
+      SELECT 3, 'Charlie', 28, 'Finance', 'inactive', datetime('now', '-20 days')
+      UNION ALL
+      SELECT 4, 'Diana', 35, 'IT', 'active', datetime('now', '-15 days')
+      UNION ALL
+      SELECT 5, 'Eve', 29, 'HR', 'active', datetime('now', '-10 days')
+      UNION ALL
+      SELECT 6, 'Frank', 42, 'Finance', 'inactive', datetime('now', '-5 days')
+      UNION ALL
+      SELECT 7, 'Grace', 26, 'IT', 'active', datetime('now', '-2 days')
+    )
     SELECT 
       u.id,
       u.name,
       u.age,
       u.department,
       u.status,
-      u.created_at
-    FROM users u
+      u.created_at,
+      '{{ search_keyword | default("") }}' as search_term
+    FROM sample_users u
     WHERE 1=1
       {%- if user_status %}
       AND u.status = {{ user_status | sql_quote }}
@@ -79,10 +96,6 @@ query:
       AND u.age <= {{ max_age }}
       {%- endif %}
       
-      {%- if not include_deleted %}
-      AND u.deleted_at IS NULL
-      {%- endif %}
-      
       {%- if departments and departments|length > 0 %}
       AND u.department IN {{ departments | sql_in }}
       {%- endif %}
@@ -93,17 +106,23 @@ query:
       
       {%- if filters %}
         {%- for key, value in filters.items() %}
-      AND u.{{ key | sql_id }} = {{ value | sql_quote }}
+          {%- if key == 'region' %}
+      -- 模拟区域过滤 (示例)
+      AND '{{ value }}' = 'Asia'
+          {%- elif key == 'level' %}
+      -- 模拟级别过滤 (示例)  
+      AND '{{ value }}' IN ('senior', 'junior')
+          {%- endif %}
         {%- endfor %}
       {%- endif %}
       
       {%- if search_keyword %}
       AND (u.name LIKE {{ ('%' + search_keyword + '%') | sql_quote }}
-           OR u.email LIKE {{ ('%' + search_keyword + '%') | sql_quote }})
+           OR u.department LIKE {{ ('%' + search_keyword + '%') | sql_quote }})
       {%- endif %}
     
     ORDER BY u.created_at DESC
-    {{ sql_limit(100) }}
+    LIMIT {{ 100 if not filters.get('limit') else filters.limit }}
 
 interval: 30s
 
