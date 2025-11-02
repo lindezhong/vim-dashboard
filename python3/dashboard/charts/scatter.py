@@ -2,51 +2,44 @@
 Scatter plot implementation for vim-dashboard
 """
 
-from typing import List, Dict, Any, Optional
-from rich.console import Console
-from rich.table import Table
-from rich.text import Text
+from typing import List, Dict, Any
 from .base import BaseChart
 
 
 class ScatterChart(BaseChart):
     """Scatter plot renderer using ASCII characters"""
     
-    def __init__(self, console: Console):
-        super().__init__(console)
-        self.chart_type = "scatter"
-    
-    def render(self, data: List[Dict[str, Any]], config: Dict[str, Any]) -> str:
+    def render(self) -> str:
         """
         Render scatter plot data as ASCII art
         
-        Args:
-            data: List of dictionaries containing chart data
-            config: Chart configuration
-            
         Returns:
             Rendered chart as string
         """
         try:
-            if not data:
-                return self._render_error("No data available for scatter plot")
+            if not self.data:
+                return self._handle_empty_data()
             
-            # Extract configuration
-            x_column = config.get('x_column', 'x')
-            y_column = config.get('y_column', 'y')
-            title = config.get('title', 'Scatter Plot')
-            width = config.get('width', 60)
-            height = config.get('height', 20)
+            # Extract configuration from show section
+            show_config = self.config.get('show', {})
+            x_column = show_config.get('x_column', self.config.get('x_column', 'x'))
+            y_column = show_config.get('y_column', self.config.get('y_column', 'y'))
+            
+            width = self._get_width() - 10  # Leave space for labels
+            height = self._get_height()
             
             # Validate required columns
-            if not all(row.get(x_column) is not None and row.get(y_column) is not None for row in data):
-                return self._render_error(f"Required columns '{x_column}' or '{y_column}' not found or contain null values")
+            for row in self.data:
+                if x_column not in row or y_column not in row:
+                    return f"Error: Required columns '{x_column}' or '{y_column}' not found"
+                if row[x_column] is None or row[y_column] is None:
+                    return f"Error: Required columns '{x_column}' or '{y_column}' contain null values"
             
             # Extract and convert data
             x_values = []
             y_values = []
             
-            for row in data:
+            for row in self.data:
                 try:
                     x_val = float(row.get(x_column, 0))
                     y_val = float(row.get(y_column, 0))
@@ -56,7 +49,7 @@ class ScatterChart(BaseChart):
                     continue
             
             if not x_values or not y_values:
-                return self._render_error("No valid numeric data found")
+                return "Error: No valid numeric data found"
             
             # Calculate ranges
             x_min, x_max = min(x_values), max(x_values)
@@ -70,8 +63,8 @@ class ScatterChart(BaseChart):
                 y_max += 1
             
             # Create plot grid
-            plot_width = width - 10  # Reserve space for y-axis labels
-            plot_height = height - 3  # Reserve space for x-axis and title
+            plot_width = width - 8  # Reserve space for y-axis labels
+            plot_height = height - 4  # Reserve space for x-axis and title
             
             # Initialize grid
             grid = [[' ' for _ in range(plot_width)] for _ in range(plot_height)]
@@ -99,9 +92,6 @@ class ScatterChart(BaseChart):
             
             # Build output
             chart_lines = []
-            chart_lines.append(f"📊 {title}")
-            chart_lines.append("=" * len(f"📊 {title}"))
-            chart_lines.append("")
             
             # Y-axis labels and grid
             for i, row in enumerate(grid):
@@ -109,45 +99,47 @@ class ScatterChart(BaseChart):
                 y_ratio = (plot_height - 1 - i) / (plot_height - 1) if plot_height > 1 else 0
                 y_value = y_min + y_ratio * (y_max - y_min)
                 
-                # Format y-axis label
-                y_label = f"{y_value:6.1f}"
+                # Y-axis label (every few rows)
+                if i % max(1, plot_height // 5) == 0 or i == plot_height - 1:
+                    y_label = f"{y_value:6.1f}"
+                else:
+                    y_label = "      "
                 
                 # Add row with y-axis label
                 row_str = ''.join(row)
-                chart_lines.append(f"{y_label} │{row_str}│")
+                chart_lines.append(f"{y_label} │{row_str}")
             
             # X-axis
-            x_axis_line = " " * 7 + "└" + "─" * plot_width + "┘"
+            x_axis_line = "       └" + "─" * plot_width
             chart_lines.append(x_axis_line)
             
             # X-axis labels
             x_labels = []
-            num_labels = min(5, plot_width // 10)  # Limit number of labels
-            for i in range(num_labels + 1):
-                if num_labels > 0:
-                    x_ratio = i / num_labels
+            num_labels = min(5, plot_width // 8)  # Max 5 labels, spaced appropriately
+            for i in range(num_labels):
+                if num_labels == 1:
+                    x_ratio = 0.5
                 else:
-                    x_ratio = 0
+                    x_ratio = i / (num_labels - 1)
                 x_value = x_min + x_ratio * (x_max - x_min)
-                x_labels.append(f"{x_value:.1f}")
+                x_labels.append(f"{x_value:6.1f}")
             
             # Format x-axis labels
-            label_spacing = plot_width // max(1, len(x_labels) - 1) if len(x_labels) > 1 else plot_width
-            x_axis_labels = " " * 8
-            for i, label in enumerate(x_labels):
-                if i == 0:
-                    x_axis_labels += label
-                elif i == len(x_labels) - 1:
-                    x_axis_labels = x_axis_labels.ljust(8 + plot_width - len(label)) + label
-                else:
-                    pos = 8 + i * label_spacing - len(label) // 2
-                    while len(x_axis_labels) < pos:
-                        x_axis_labels += " "
-                    x_axis_labels += label
+            if x_labels:
+                label_spacing = plot_width // len(x_labels) if len(x_labels) > 1 else plot_width // 2
+                x_axis_labels = "        "
+                for i, label in enumerate(x_labels):
+                    if i == 0:
+                        x_axis_labels += label
+                    else:
+                        # Add spacing
+                        spaces_needed = label_spacing - len(x_labels[i-1]) // 2 - len(label) // 2
+                        x_axis_labels += " " * max(1, spaces_needed) + label
+                chart_lines.append(x_axis_labels)
             
-            chart_lines.append(x_axis_labels)
+            # Add axis titles and statistics
             chart_lines.append("")
-            chart_lines.append(f"X: {x_column}, Y: {y_column}")
+            chart_lines.append(f"X: {x_column} | Y: {y_column}")
             chart_lines.append(f"Points: {len(x_values)}")
             chart_lines.append(f"X range: {x_min:.2f} - {x_max:.2f}")
             chart_lines.append(f"Y range: {y_min:.2f} - {y_max:.2f}")
@@ -155,22 +147,4 @@ class ScatterChart(BaseChart):
             return "\n".join(chart_lines)
             
         except Exception as e:
-            return self._render_error(f"Error rendering scatter plot: {str(e)}")
-    
-    def validate_config(self, config: Dict[str, Any]) -> bool:
-        """
-        Validate scatter plot configuration
-        
-        Args:
-            config: Chart configuration to validate
-            
-        Returns:
-            True if configuration is valid
-        """
-        required_fields = ['x_column', 'y_column']
-        
-        for field in required_fields:
-            if field not in config:
-                return False
-        
-        return True
+            return self._handle_error(e)
