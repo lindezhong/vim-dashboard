@@ -192,6 +192,8 @@ class DashboardCore:
                         vim.command('echohl MoreMsg')
                         vim.command('echo "Dashboard stopped: " . shellescape(' + repr(config_file) + ')')
                         vim.command('echohl None')
+                        # Refresh sidebar if it exists to update status
+                        self._refresh_sidebar_if_exists()
                         return True
                     else:
                         vim.command('echo "DEBUG: Failed to remove task"')
@@ -226,6 +228,9 @@ class DashboardCore:
                             # Close the dashboard buffer
                             vim.command('bwipeout')
                             vim.command('echohl MoreMsg | echo "Dashboard stopped" | echohl None')
+
+                            # Refresh sidebar if it exists to update status
+                            self._refresh_sidebar_if_exists()
                             return True
                         break
 
@@ -258,7 +263,30 @@ endfor
         except Exception as e:
             import traceback
             vim.command(f'echohl ErrorMsg | echo "Error closing dashboard file: {str(e)}" | echohl None')
-    
+
+    def _refresh_sidebar_if_exists(self):
+        """Refresh sidebar if it exists to update status."""
+        try:
+            # Check if sidebar exists
+            vim.command('''
+let g:dashboard_sidebar_exists = 0
+for i in range(1, winnr("$"))
+  if getwinvar(i, "&filetype") == "dashboard-sidebar"
+    let g:dashboard_sidebar_exists = 1
+    break
+  endif
+endfor
+''')
+
+            sidebar_exists = vim.eval('g:dashboard_sidebar_exists') == '1'
+
+            if sidebar_exists:
+                # Refresh the sidebar
+                self.open_dashboard_browser()
+        except Exception as e:
+            # Silently ignore errors in sidebar refresh
+            pass
+
     def list_dashboards(self) -> bool:
         """List all running dashboards."""
         try:
