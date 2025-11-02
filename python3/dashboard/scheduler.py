@@ -40,11 +40,19 @@ class DashboardTask:
     
     def get_remaining_time(self) -> int:
         """Get remaining time until next refresh in seconds."""
-        if self.last_run == 0:
-            return 0  # First run, no remaining time
-
         current_time = time.time()
-        elapsed = current_time - self.last_run
+
+        # If task is currently running, show "Refreshing..."
+        if self.is_running:
+            return 0
+
+        # If never run before, calculate from creation time
+        if self.last_run == 0:
+            # Use current time as reference for countdown
+            elapsed = 0
+        else:
+            elapsed = current_time - self.last_run
+
         remaining = max(0, self.interval - elapsed)
         return int(remaining)
 
