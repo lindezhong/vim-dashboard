@@ -240,34 +240,8 @@ class DashboardCore:
 
                             vim.command('echohl MoreMsg | echo "Dashboard stopped, switched to remaining dashboard" | echohl None')
                         else:
-                            # No remaining dashboards, check if we're in sidebar layout
-                            vim.command('''
-let g:dashboard_sidebar_exists = 0
-for i in range(1, winnr("$"))
-  if getwinvar(i, "&filetype") == "dashboard-sidebar"
-    let g:dashboard_sidebar_exists = 1
-    break
-  endif
-endfor
-''')
-
-                            sidebar_exists = vim.eval('g:dashboard_sidebar_exists') == '1'
-
-                            if sidebar_exists:
-                                # We're in sidebar layout, create placeholder in right window
-                                vim.command('enew')
-                                vim.command('setlocal buftype=nofile')
-                                vim.command('setlocal noswapfile')
-                                vim.command('setlocal nobuflisted')
-                                # Use a safe way to name the buffer as "*"
-                                vim.command('silent! file [Dashboard]')
-                                vim.current.buffer[:] = ['', '  No active dashboard', '  Select a configuration from the sidebar', '']
-                                vim.command('setlocal readonly')
-                                vim.command('setlocal nomodifiable')
-                            else:
-                                # Not in sidebar layout, close the buffer normally
-                                vim.command('bwipeout')
-
+                            # No remaining dashboards, close the current buffer
+                            vim.command('bwipeout')
                             vim.command('echohl MoreMsg | echo "Dashboard stopped" | echohl None')
 
                         # Refresh sidebar if it exists to update status
