@@ -529,10 +529,12 @@ def dashboard_sidebar_select():
             else:
                 vim.command('echo "DEBUG: Dashboard not running, starting it"')
                 # Dashboard not running, start it
+                # Switch to right window first so dashboard_start opens file there
+                vim.command('wincmd l')
                 success = dashboard_start(full_path)
 
                 if success:
-                    # dashboard_start already opened the file, just need to update sidebar and switch focus
+                    # dashboard_start already opened the file in the right window
                     vim.command('echo "DEBUG: Dashboard started successfully"')
 
                     # Update sidebar status (switch back to sidebar first)
