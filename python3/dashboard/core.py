@@ -737,9 +737,12 @@ else
 endif
 ''')
 
-                # Stop the dashboard
-                core.stop_dashboard(full_path)
-                vim.command('echo "Dashboard stopped"')
+                # Switch to the temp file buffer first, then use unified stop logic
+                vim.command('wincmd l')  # Switch to right window
+                vim.command(f'silent edit {temp_file}')  # Open the temp file
+
+                # Now use the unified stop logic (no config_file parameter)
+                core.stop_dashboard()  # This will use the current buffer logic
 
                 # Check again if the temp file buffer still exists after stopping
                 vim.command(f'''
