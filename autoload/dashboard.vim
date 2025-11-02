@@ -338,7 +338,9 @@ import json
 
 def python_to_vim_value(obj):
     """Convert Python objects to VimScript-compatible format"""
-    if isinstance(obj, bool):
+    if obj is None:
+        return ""  # Convert None to empty string for VimScript
+    elif isinstance(obj, bool):
         return 1 if obj else 0
     elif isinstance(obj, (list, tuple)):
         return [python_to_vim_value(item) for item in obj]
@@ -353,6 +355,11 @@ if variables_info:
     # Convert to VimScript-compatible format
     vim_var_names = json.dumps(var_names)
     vim_variables_info = json.dumps(python_to_vim_value(variables_info))
+
+    # Replace any remaining null values in JSON strings
+    vim_var_names = vim_var_names.replace('null', '""')
+    vim_variables_info = vim_variables_info.replace('null', '""')
+
     vim.command('let l:var_names = ' + vim_var_names)
     vim.command('let l:variables_info = ' + vim_variables_info)
 else:
