@@ -17,33 +17,85 @@ class LineChart(BaseChart):
         super().__init__(data, config)
         self.show_config = config.get('show', {})
         self.x_column = self.show_config.get('x_column', 'x')
-        self.y_column = self.show_config.get('y_column', 'y')
+
+        # Support both single y_column and multiple y_columns
+        self.y_columns_config = self.show_config.get('y_columns', [])
+        self.y_column_single = self.show_config.get('y_column', 'y')
+
+        # Determine which columns to use
+        if self.y_columns_config:
+            # Multiple columns configuration
+            self.y_columns = []
+            for col_config in self.y_columns_config:
+                if isinstance(col_config, dict):
+                    self.y_columns.append({
+                        'column': col_config.get('column', 'y'),
+                        'label': col_config.get('label', col_config.get('column', 'y')),
+                        'color': col_config.get('color', '#3498db'),
+                        'line_style': col_config.get('line_style', 'solid'),
+                        'marker': col_config.get('marker', 'circle')
+                    })
+                else:
+                    # Simple string format
+                    self.y_columns.append({
+                        'column': str(col_config),
+                        'label': str(col_config),
+                        'color': '#3498db',
+                        'line_style': 'solid',
+                        'marker': 'circle'
+                    })
+        else:
+            # Single column configuration (backward compatibility)
+            self.y_columns = [{
+                'column': self.y_column_single,
+                'label': self.y_column_single,
+                'color': '#3498db',
+                'line_style': 'solid',
+                'marker': 'circle'
+            }]
         
-    def _extract_chart_data(self) -> Tuple[List[str], List[float]]:
-        """Extract x and y data from the dataset."""
+    def _extract_chart_data(self) -> Tuple[List[str], Dict[str, List[float]]]:
+        """Extract x and y data from the dataset for multiple series."""
         labels = []
-        values = []
-        
+        series_data = {}
+
+        # Initialize series data
+        for y_col in self.y_columns:
+            series_data[y_col['column']] = []
+
+        # Get unique x values (preserve order from data)
+        seen_x = set()
         for row in self.data:
-            x_val = row.get(self.x_column, '')
-            y_val = row.get(self.y_column, 0)
-            
-            # Convert label to string and truncate if needed
-            label = str(x_val)
-            max_label_length = self.style.get('max_label_length', 10)
-            if max_label_length:
-                label = truncate_string(label, max_label_length)
-            
-            # Convert value to float
-            try:
-                value = float(y_val) if y_val is not None else 0.0
-            except (ValueError, TypeError):
-                value = 0.0
-            
-            labels.append(label)
-            values.append(value)
-        
-        return labels, values
+            x_val = str(row.get(self.x_column, ''))
+            if x_val not in seen_x:
+                labels.append(x_val)
+                seen_x.add(x_val)
+
+        # Extract values for each series
+        for row in self.data:
+            x_val = str(row.get(self.x_column, ''))
+            if x_val in labels:  # Only process known x values
+                for y_col in self.y_columns:
+                    y_val = row.get(y_col['column'], 0)
+
+                    # Convert value to float
+                    try:
+                        value = float(y_val) if y_val is not None else 0.0
+                    except (ValueError, TypeError):
+                        value = 0.0
+
+                    # Find the index for this x value and set the corresponding y value
+                    x_index = labels.index(x_val)
+                    while len(series_data[y_col['column']]) <= x_index:
+                        series_data[y_col['column']].append(0.0)
+                    series_data[y_col['column']][x_index] = value
+
+        # Ensure all series have the same length as labels
+        for y_col in self.y_columns:
+            while len(series_data[y_col['column']]) < len(labels):
+                series_data[y_col['column']].append(0.0)
+
+        return labels, series_data
     
     def _get_chart_dimensions(self) -> Tuple[int, int]:
         """Get chart dimensions."""
@@ -90,10 +142,16 @@ class LineChart(BaseChart):
     
     def _plot_points_and_lines(self, grid: List[List[str]], labels: List[str], 
                               normalized_values: List[int], chart_width: int, chart_height: int):
-        """Plot points and connecting lines on the grid."""
+        """Plot points and connecting lines on the grid (legacy method for backward compatibility)."""
+        point_char = self.style.get('point_char', ASCIIChartHelper.CHART_CHARS['line']['point'])
+        self._plot_series_points_and_lines(grid, labels, normalized_values, chart_width, chart_height, point_char)
+
+    def _plot_series_points_and_lines(self, grid: List[List[str]], labels: List[str],
+                                     normalized_values: List[int], chart_width: int, chart_height: int, point_char: str):
+        """Plot points and connecting lines for a single series on the grid."""
         if not normalized_values:
             return
-        
+
         # Calculate x positions for data points
         if len(normalized_values) == 1:
             x_positions = [chart_width // 2]
@@ -102,15 +160,15 @@ class LineChart(BaseChart):
             for i in range(len(normalized_values)):
                 x_pos = int((i / (len(normalized_values) - 1)) * (chart_width - 1))
                 x_positions.append(x_pos)
-        
+
         # Plot points
-        point_char = self.style.get('point_char', ASCIIChartHelper.CHART_CHARS['line']['point'])
-        
         for i, (x_pos, y_pos) in enumerate(zip(x_positions, normalized_values)):
             if 0 <= x_pos < chart_width and 0 <= y_pos < chart_height:
                 # Y coordinate is inverted (0 = top of grid, but we want 0 = bottom of chart)
                 grid_y = chart_height - 1 - y_pos
-                grid[grid_y][x_pos] = point_char
+                # Only plot if position is empty or use the new character
+                if grid[grid_y][x_pos] == ' ' or grid[grid_y][x_pos] == ASCIIChartHelper.CHART_CHARS['line']['line_h']:
+                    grid[grid_y][x_pos] = point_char
         
         # Draw connecting lines
         line_char = self.style.get('line_char', ASCIIChartHelper.CHART_CHARS['line']['line_h'])
@@ -216,50 +274,90 @@ class LineChart(BaseChart):
             return str(value)
     
     def render(self) -> str:
-        """Render line chart."""
-        labels, values = self._extract_chart_data()
-        
-        if not labels or not values:
+        """Render line chart with multiple series support."""
+        labels, series_data = self._extract_chart_data()
+
+        if not labels or not series_data:
             return self._handle_empty_data()
-        
+
         chart_width, chart_height = self._get_chart_dimensions()
-        
-        # Normalize values to chart height
-        normalized_values = self._normalize_values_to_chart_height(values, chart_height)
-        
+
         # Create chart grid
         grid = self._create_line_chart_grid(chart_width, chart_height)
-        
-        # Plot data
-        self._plot_points_and_lines(grid, labels, normalized_values, chart_width, chart_height)
-        
+
+        # Get all values for range calculation
+        all_values = []
+        for series_values in series_data.values():
+            all_values.extend(series_values)
+
+        if not all_values:
+            return self._handle_empty_data()
+
+        # Characters for different series
+        line_chars = ['●', '◆', '▲', '■', '♦', '○', '◇', '△', '□', '◊']
+
+        # Plot each series
+        for series_idx, y_col in enumerate(self.y_columns):
+            column_name = y_col['column']
+            if column_name not in series_data:
+                continue
+
+            values = series_data[column_name]
+            if not values:
+                continue
+
+            # Normalize values to chart height
+            normalized_values = self._normalize_values_to_chart_height(values, chart_height)
+
+            # Use different character for each series
+            char = line_chars[series_idx % len(line_chars)]
+
+            # Plot this series
+            self._plot_series_points_and_lines(grid, labels, normalized_values,
+                                             chart_width, chart_height, char)
+
         # Add axes
         self._add_axes_to_grid(grid, chart_width, chart_height)
-        
-        # Convert grid to strings
+
+        # Build output
         chart_lines = []
+
+        # Add title
+        title = self.show_config.get('title', 'Line Chart')
+        chart_lines.append(f"  {title}")
+        chart_lines.append("")
+
+        # Add legend for multiple series
+        if len(self.y_columns) > 1:
+            legend_line = "  Legend: "
+            for i, y_col in enumerate(self.y_columns):
+                char = line_chars[i % len(line_chars)]
+                legend_line += f"{char} {y_col['label']}  "
+            chart_lines.append(legend_line)
+            chart_lines.append("")
+
+        # Convert grid to strings
         for row in grid:
             chart_lines.append(''.join(row))
-        
+
         # Add x-axis labels
         x_labels = self._create_x_axis_labels(labels, chart_width)
         if x_labels.strip():
             chart_lines.append(x_labels)
-        
-        # Join chart content
-        chart_content = '\n'.join(chart_lines)
-        
+
         # Add y-axis info
-        y_info = self._create_y_axis_info(values)
+        y_info = self._create_y_axis_info(all_values)
         if y_info:
-            chart_content += '\n' + ' | '.join(y_info)
-        
+            chart_lines.append("")
+            chart_lines.extend(y_info)
+
         # Add statistics if enabled
         if self.style.get('show_stats', False):
-            stats = self._generate_stats(values)
-            chart_content += '\n' + stats
-        
-        return chart_content
+            stats = self._generate_stats(all_values)
+            chart_lines.append("")
+            chart_lines.append(stats)
+
+        return '\n'.join(chart_lines)
     
     def _generate_stats(self, values: List[float]) -> str:
         """Generate statistics for the chart."""
