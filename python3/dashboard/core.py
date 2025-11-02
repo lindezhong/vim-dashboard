@@ -292,6 +292,36 @@ endfor
                             vim.command('normal! gg')
                             vim.command('echohl MoreMsg | echo "DEBUG: After cursor movement - Current window: " . winnr() . ", filetype: " . &filetype | echohl None')
 
+                            # Strong visual confirmation methods
+                            vim.command('echohl MoreMsg | echo "DEBUG: Applying strong visual confirmation..." | echohl None')
+
+                            # Method 1: Force redraw and refresh
+                            vim.command('redraw!')
+                            vim.command('redrawstatus!')
+
+                            # Method 2: Briefly highlight the current line
+                            vim.command('set cursorline')
+                            vim.command('redraw!')
+
+                            # Method 3: Flash the screen (brief mode change)
+                            vim.command('set number!')
+                            vim.command('redraw!')
+                            vim.command('set number!')
+                            vim.command('redraw!')
+
+                            # Method 4: Force enter insert mode and back to normal (creates visible change)
+                            vim.command('startinsert')
+                            vim.command('stopinsert')
+
+                            # Method 5: Move cursor in a visible pattern
+                            vim.command('normal! 0')  # Go to beginning of line
+                            vim.command('redraw!')
+                            vim.command('normal! $')  # Go to end of line
+                            vim.command('redraw!')
+                            vim.command('normal! 0')  # Back to beginning
+
+                            vim.command('echohl MoreMsg | echo "DEBUG: Strong visual confirmation completed" | echohl None')
+
                             vim.command('echohl MoreMsg | echo "Dashboard stopped, switched to remaining dashboard" | echohl None')
                         else:
                             # No remaining dashboards, close the current buffer
