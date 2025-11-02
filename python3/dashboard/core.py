@@ -251,20 +251,30 @@ class DashboardCore:
                             vim.command('silent! checktime')
                             vim.command('redraw!')
 
+                            # Debug: Check current window before focus switch
+                            vim.command('echohl MoreMsg | echo "DEBUG: Before focus switch - Current window: " . winnr() . ", filetype: " . &filetype | echohl None')
+
                             # Immediately ensure focus is on the dashboard window after file switch
                             vim.command('wincmd l')  # Move to right window first
+                            vim.command('echohl MoreMsg | echo "DEBUG: After wincmd l - Current window: " . winnr() . ", filetype: " . &filetype | echohl None')
 
                             # Now close the old buffer (window layout is preserved since we have a new buffer)
                             vim.command(f'silent! bwipeout {current_buffer_number}')
+                            vim.command('echohl MoreMsg | echo "DEBUG: After bwipeout - Current window: " . winnr() . ", filetype: " . &filetype | echohl None')
 
                             # Final focus enforcement - find and switch to dashboard window
                             vim.command('''
+echohl MoreMsg | echo "DEBUG: Starting window search for dashboard filetype" | echohl None
 for i in range(1, winnr("$") + 1)
-  if getwinvar(i, "&filetype") == "dashboard"
+  let ft = getwinvar(i, "&filetype")
+  echohl MoreMsg | echo "DEBUG: Window " . i . " filetype: " . ft | echohl None
+  if ft == "dashboard"
+    echohl MoreMsg | echo "DEBUG: Found dashboard window " . i . ", switching to it" | echohl None
     execute i . "wincmd w"
     break
   endif
 endfor
+echohl MoreMsg | echo "DEBUG: Final - Current window: " . winnr() . ", filetype: " . &filetype | echohl None
 ''')
 
                             vim.command('echohl MoreMsg | echo "Dashboard stopped, switched to remaining dashboard" | echohl None')
