@@ -271,6 +271,84 @@ class LineChart(BaseChart):
             else:
                 return f"{value:.2f}"
     
+    def _draw_threshold_lines(self, chart_lines: List[str], chart_width: int, chart_height: int,
+                             display_min: float, display_max: float, y_axis_width: int) -> None:
+        """Draw threshold lines on the chart."""
+        threshold_config = self.show_config.get('threshold_lines', [])
+        if not threshold_config:
+            return
+
+        for threshold in threshold_config:
+            if not isinstance(threshold, dict):
+                continue
+
+            value = threshold.get('value')
+            if value is None:
+                continue
+
+            try:
+                threshold_value = float(value)
+            except (ValueError, TypeError):
+                continue
+
+            # Check if threshold is within display range
+            if threshold_value < display_min or threshold_value > display_max:
+                continue
+
+            # Calculate Y position for threshold line
+            if display_max == display_min:
+                y_pos = chart_height // 2
+            else:
+                normalized = (threshold_value - display_min) / (display_max - display_min)
+                y_pos = int((1 - normalized) * (chart_height - 1))  # Invert Y
+
+            # Ensure y_pos is within bounds
+            if y_pos < 0 or y_pos >= len(chart_lines) - 2:  # -2 for x-axis and labels
+                continue
+
+            # Get line style
+            line_style = threshold.get('style', 'solid')
+            if line_style == 'dashed':
+                line_char = '┄'
+            elif line_style == 'dotted':
+                line_char = '┈'
+            else:  # solid
+                line_char = '─'
+
+            # Get color (for display purposes, we'll use different characters)
+            color = threshold.get('color', 'red')
+            if color == 'red':
+                line_char = '━'  # Bold line for red
+            elif color == 'yellow':
+                line_char = '═'  # Double line for yellow
+
+            # Find the chart line to modify (accounting for title and legend)
+            chart_line_index = None
+            for i, line in enumerate(chart_lines):
+                if '│' in line:  # This is a chart line
+                    chart_data_start = i
+                    chart_line_index = chart_data_start + y_pos
+                    break
+
+            if chart_line_index is None or chart_line_index >= len(chart_lines):
+                continue
+
+            # Modify the line to add threshold
+            line = chart_lines[chart_line_index]
+            if '│' in line:
+                # Find the chart area (after the Y-axis)
+                axis_pos = line.find('│')
+                if axis_pos != -1:
+                    # Replace the chart area with threshold line
+                    new_line = line[:axis_pos + 1] + line_char * chart_width
+                    chart_lines[chart_line_index] = new_line
+
+                    # Add threshold label if specified
+                    label = threshold.get('label', '')
+                    if label:
+                        # Add label at the end of the line
+                        chart_lines[chart_line_index] += f' ← {label}'
+
     def render(self) -> str:
         """Render line chart with proper line visualization and Y-axis labels."""
         labels, series_data = self._extract_chart_data()
@@ -294,7 +372,7 @@ class LineChart(BaseChart):
         # Calculate value range with padding
         min_val = min(all_values)
         max_val = max(all_values)
-        
+
         value_range = max_val - min_val
         if value_range == 0:
             value_range = 1
@@ -322,7 +400,7 @@ class LineChart(BaseChart):
 
         # Create the chart
         chart_grid = self._create_ascii_line_chart(labels, series_data, chart_width, chart_height, display_min, display_max)
-        
+
         # Create Y-axis labels
         y_labels = self._create_y_axis_labels(display_min, display_max, chart_height, y_axis_width)
 
@@ -332,6 +410,9 @@ class LineChart(BaseChart):
                 chart_lines.append(y_labels[i] + '│' + row)
             else:
                 chart_lines.append(' ' * y_axis_width + '│' + row)
+
+        # Add threshold lines
+        self._draw_threshold_lines(chart_lines, chart_width, chart_height, display_min, display_max, y_axis_width)
 
         # Add X-axis line
         x_axis_line = ' ' * y_axis_width + '└' + '─' * chart_width
