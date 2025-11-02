@@ -238,13 +238,18 @@ class DashboardCore:
 
                             # Switch to the remaining dashboard file first (this preserves window layout)
                             vim.command('set autoread')
-                            vim.command(f'silent edit {remaining_temp_file}')
+                            # Force reload the file content to ensure it's up to date
+                            vim.command(f'silent edit! {remaining_temp_file}')
                             vim.command('setlocal filetype=dashboard')
                             vim.command('setlocal autoread')
                             vim.command('setlocal noswapfile')
                             vim.command('setlocal buftype=nowrite')
                             vim.command('setlocal readonly')
                             vim.command('call dashboard#setup_dashboard_buffer()')
+
+                            # Force refresh the buffer content
+                            vim.command('silent! checktime')
+                            vim.command('redraw!')
 
                             # Now close the old buffer (window layout is preserved since we have a new buffer)
                             vim.command(f'silent! bwipeout {current_buffer_number}')
