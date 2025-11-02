@@ -6,6 +6,7 @@ import os
 import yaml
 from typing import Dict, Any, Optional, List
 from .utils import validate_config_structure, parse_interval, safe_get_nested
+from .template import SQLTemplateProcessor
 
 
 class ConfigManager:
@@ -14,7 +15,8 @@ class ConfigManager:
     def __init__(self):
         self.config: Optional[Dict[str, Any]] = None
         self.config_path: Optional[str] = None
-        
+        self.template_processor: Optional[SQLTemplateProcessor] = None
+
     def load_config(self, config_path: str) -> Dict[str, Any]:
         """Load and validate configuration from YAML file."""
         if not os.path.exists(config_path):
@@ -37,6 +39,11 @@ class ConfigManager:
         config = self._apply_defaults(config)
         config = self._normalize_config(config)
         
+        # Initialize template processor if args are defined
+        if 'args' in config:
+            self.template_processor = SQLTemplateProcessor()
+            self.template_processor.process_config_parameters(config)
+
         self.config = config
         self.config_path = config_path
         return config
@@ -242,3 +249,61 @@ class ConfigManager:
         if not self.config_path:
             raise ValueError("No config file path available for reload")
         return self.load_config(self.config_path)
+
+    def render_query(self, runtime_args: Dict[str, Any] = None) -> str:
+        """
+        Render SQL query with template variables.
+
+        Args:
+            runtime_args: Runtime arguments to override defaults
+
+        Returns:
+            Rendered SQL query string
+        """
+        if not self.config:
+            raise ValueError("No configuration loaded")
+
+        query_template = self.config.get('query', '')
+
+        # If no template processor, return query as-is
+        if not self.template_processor:
+            return query_template
+
+        # Render template with runtime arguments
+        return self.template_processor.render_sql(query_template, runtime_args or {})
+
+    def get_template_parameters(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Get information about template parameters.
+
+        Returns:
+            Dictionary of parameter information
+        """
+        if not self.template_processor:
+            return {}
+
+        return self.template_processor.get_parameter_info()
+
+    def validate_template_syntax(self) -> tuple[bool, Optional[str]]:
+        """
+        Validate SQL template syntax.
+
+        Returns:
+            Tuple of (is_valid, error_message)
+        """
+        if not self.config:
+            return False, "No configuration loaded"
+
+        query_template = self.config.get('query', '')
+
+        if not self.template_processor:
+            return True, None  # No template processing needed
+
+        return self.template_processor.validate_template(query_template)
+
+    def get_args_config(self) -> List[Dict[str, Any]]:
+        """Get template arguments configuration."""
+        if not self.config:
+            return []
+
+        return self.config.get('args', [])

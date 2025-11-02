@@ -20,7 +20,15 @@ query: |
       when abs(random() % 3) = 1 then 'Pending' 
       else 'Inactive'
     end as status,                                     -- 随机状态
-    'User' || (abs(random() % 10) + 1) as username    -- 模拟用户名
+    'User' || (abs(random() % 10) + 1) as username,    -- 模拟用户名
+    "{{key1}}" as k1,
+    "{{key2}}" as k2
+
+args:
+  - key: key1
+    default: value1
+  - key: key2
+    default: value2
 
 # 刷新间隔
 interval: 30s                    # 每30秒刷新一次数据
@@ -29,26 +37,26 @@ interval: 30s                    # 每30秒刷新一次数据
 show:
   type: table                     # 图表类型：表格
   title: "系统状态监控表"         # 表格标题
-  
+
   # 列配置，定义每列的显示名称和格式
   column_list:
     - column: current_time        # 数据库列名
       alias: "当前时间"           # 显示名称
       width: 20                   # 列宽度（字符数）
       align: center               # 对齐方式：left, center, right
-      
+
     - column: random_number
       alias: "随机数"
       width: 10
       align: right
       format: "{:>3d}"            # 数字格式化：右对齐，3位数字
-      
+
     - column: sales_amount
       alias: "销售金额"
       width: 12
       align: right
       format: "¥{:,}"             # 货币格式：添加千位分隔符
-      
+
     - column: status
       alias: "状态"
       width: 10
@@ -58,11 +66,21 @@ show:
         Active: green             # Active状态显示绿色
         Pending: yellow           # Pending状态显示黄色
         Inactive: red             # Inactive状态显示红色
-        
+
     - column: username
       alias: "用户名"
       width: 12
       align: left
+
+    - column: key1
+      alias: "k1"
+      width: 10
+      align: center
+
+    - column: key2
+      alias: "k2"
+      width: 10
+      align: center
 
   # 表格样式配置
   style:
