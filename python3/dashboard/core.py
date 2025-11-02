@@ -167,54 +167,111 @@ class DashboardCore:
     def stop_dashboard(self, config_file: Optional[str] = None) -> bool:
         """Stop dashboard task."""
         try:
+            vim.command('echo "DEBUG: stop_dashboard called"')
+
             if config_file:
+                vim.command(f'echo "DEBUG: Stopping specific config: {config_file}"')
                 # Stop specific config file
                 config_file = os.path.abspath(config_file)
                 task = self.scheduler.get_task_by_config_file(config_file)
                 if task:
+                    vim.command('echo "DEBUG: Task found, getting temp file path"')
+                    # Get temp file path before stopping
+                    temp_file = task.get_temp_file_path()
+                    vim.command(f'echo "DEBUG: Temp file: {temp_file}"')
+
                     success = self.scheduler.remove_task(task.task_id)
                     if success:
+                        vim.command('echo "DEBUG: Task removed successfully, now closing file"')
+
+                        # Close the temp file if it exists
+                        if temp_file and os.path.exists(temp_file):
+                            self._close_dashboard_file(temp_file)
+
                         # Use vim's shellescape() to safely handle paths with special characters
                         vim.command('echohl MoreMsg')
                         vim.command('echo "Dashboard stopped: " . shellescape(' + repr(config_file) + ')')
                         vim.command('echohl None')
                         return True
                     else:
+                        vim.command('echo "DEBUG: Failed to remove task"')
                         # Use vim's shellescape() to safely handle paths with special characters
                         vim.command('echohl ErrorMsg')
                         vim.command('echo "Failed to stop dashboard: " . shellescape(' + repr(config_file) + ')')
                         vim.command('echohl None')
                         return False
                 else:
+                    vim.command('echo "DEBUG: No task found for config file"')
                     # Use vim's shellescape() to safely handle paths with special characters
                     vim.command('echohl WarningMsg')
                     vim.command('echo "No running dashboard for: " . shellescape(' + repr(config_file) + ')')
                     vim.command('echohl None')
                     return False
             else:
+                vim.command('echo "DEBUG: Stopping current buffer dashboard"')
                 # Stop current buffer's dashboard
                 current_file = vim.current.buffer.name
+                vim.command(f'echo "DEBUG: Current file: {current_file}"')
+
                 if not current_file:
                     vim.command('echohl ErrorMsg | echo "No active dashboard buffer" | echohl None')
                     return False
-                
+
                 # Find and stop task
                 tasks = self.scheduler.list_tasks()
+                vim.command(f'echo "DEBUG: Found {len(tasks)} running tasks"')
+
                 for task_id, task_info in tasks.items():
+                    vim.command(f'echo "DEBUG: Checking task {task_id}, temp_file: {task_info[\"temp_file\"]}"')
                     if task_info['temp_file'] == current_file:
+                        vim.command('echo "DEBUG: Found matching task, removing it"')
                         success = self.scheduler.remove_task(task_id)
                         if success:
+                            vim.command('echo "DEBUG: Task removed, closing current buffer"')
+                            # Close current buffer
+                            vim.command('bwipeout')
                             vim.command('echohl MoreMsg | echo "Dashboard stopped" | echohl None')
                             return True
                         break
-                
+
+                vim.command('echo "DEBUG: No matching task found"')
                 vim.command('echohl ErrorMsg | echo "Current buffer is not a dashboard" | echohl None')
                 return False
-                
+
         except Exception as e:
-            error_msg = format_error_message(e, "Dashboard Stop")
+            import traceback
+            error_msg = f"Error in stop_dashboard: {str(e)}\\n{traceback.format_exc()}"
             vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
             return False
+
+    def _close_dashboard_file(self, temp_file: str):
+        """Helper function to close dashboard file."""
+        try:
+            vim.command(f'echo "DEBUG: _close_dashboard_file called for: {temp_file}"')
+
+            # Normalize paths for comparison
+            temp_file_normalized = os.path.normpath(temp_file)
+            vim.command(f'echo "DEBUG: Normalized path: {temp_file_normalized}"')
+
+            # First, try to close the buffer directly
+            vim.command(f'silent! bwipeout {temp_file_normalized}')
+            vim.command('echo "DEBUG: Executed bwipeout command"')
+
+            # Check all windows to see if the file is still open
+            vim.command('''
+let g:dashboard_file_closed = 1
+for i in range(1, winnr("$"))
+  let bufname = bufname(winbufnr(i))
+  if bufname != ""
+    echom "DEBUG: Window " . i . " has buffer: " . bufname
+  endif
+endfor
+''')
+
+        except Exception as e:
+            import traceback
+            vim.command(f'echo "DEBUG: Error in _close_dashboard_file: {str(e)}"')
+            vim.command(f'echo "DEBUG: Traceback: {traceback.format_exc()}"')
     
     def list_dashboards(self) -> bool:
         """List all running dashboards."""
