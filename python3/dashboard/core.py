@@ -167,23 +167,16 @@ class DashboardCore:
     def stop_dashboard(self, config_file: Optional[str] = None) -> bool:
         """Stop dashboard task."""
         try:
-            vim.command('echo "DEBUG: stop_dashboard called"')
-
             if config_file:
-                vim.command(f'echo "DEBUG: Stopping specific config: {config_file}"')
                 # Stop specific config file
                 config_file = os.path.abspath(config_file)
                 task = self.scheduler.get_task_by_config_file(config_file)
                 if task:
-                    vim.command('echo "DEBUG: Task found, getting temp file path"')
                     # Get temp file path before stopping
                     temp_file = task.get_temp_file_path()
-                    vim.command(f'echo "DEBUG: Temp file: {temp_file}"')
 
                     success = self.scheduler.remove_task(task.task_id)
                     if success:
-                        vim.command('echo "DEBUG: Task removed successfully, now closing file"')
-
                         # Close the temp file if it exists
                         if temp_file and os.path.exists(temp_file):
                             self._close_dashboard_file(temp_file)
@@ -196,14 +189,12 @@ class DashboardCore:
                         self._refresh_sidebar_if_exists()
                         return True
                     else:
-                        vim.command('echo "DEBUG: Failed to remove task"')
                         # Use vim's shellescape() to safely handle paths with special characters
                         vim.command('echohl ErrorMsg')
                         vim.command('echo "Failed to stop dashboard: " . shellescape(' + repr(config_file) + ')')
                         vim.command('echohl None')
                         return False
                 else:
-                    vim.command('echo "DEBUG: No task found for config file"')
                     # Use vim's shellescape() to safely handle paths with special characters
                     vim.command('echohl WarningMsg')
                     vim.command('echo "No running dashboard for: " . shellescape(' + repr(config_file) + ')')
