@@ -529,13 +529,35 @@ def dashboard_sidebar_select():
             else:
                 vim.command('echo "DEBUG: Dashboard not running, starting it"')
                 # Dashboard not running, start it
-                # Switch to right window first
-                vim.command('wincmd l')
-                dashboard_start(full_path)
+                success = dashboard_start(full_path)
 
-                # Refresh sidebar to update status
-                vim.command('wincmd h')
-                dashboard_browser()
+                if success:
+                    # Find the opened dashboard file and switch to it
+                    core = get_dashboard_core()
+                    task = core.scheduler.get_task_by_config_file(full_path)
+                    if task:
+                        temp_file = task.get_temp_file_path()
+                        vim.command('echo "DEBUG: Switching to temp file: ' + temp_file + '"')
+
+                        # Switch to right window and open the temp file
+                        vim.command('wincmd l')
+                        vim.command(f'silent edit {temp_file}')
+                        vim.command('setlocal filetype=dashboard')
+                        vim.command('setlocal autoread')
+                        vim.command('setlocal noswapfile')
+                        vim.command('setlocal buftype=nowrite')
+                        vim.command('setlocal readonly')
+                        vim.command('call dashboard#setup_dashboard_buffer()')
+
+                        # Update sidebar status (switch back to sidebar first)
+                        vim.command('wincmd h')
+                        dashboard_browser()
+                        # Switch back to dashboard file
+                        vim.command('wincmd l')
+                    else:
+                        vim.command('echohl ErrorMsg | echo "Failed to get dashboard task" | echohl None')
+                else:
+                    vim.command('echohl ErrorMsg | echo "Failed to start dashboard" | echohl None')
         else:
             vim.command(f'echohl ErrorMsg | echo "Invalid selection: {selected_index} not in range 0-{len(config_files)-1}" | echohl None')
 
