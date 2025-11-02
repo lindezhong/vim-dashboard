@@ -6,39 +6,39 @@ database:
   type: sqlite
   url: "sqlite:///:memory:"
 
-query: |
-  WITH RECURSIVE hours AS (
-    SELECT 0 as hour
-    UNION ALL
-    SELECT hour + 1 FROM hours WHERE hour < 23
-  ),
-  days AS (
-    SELECT 'Monday' as day, 1 as day_order
-    UNION SELECT 'Tuesday', 2
-    UNION SELECT 'Wednesday', 3
-    UNION SELECT 'Thursday', 4
-    UNION SELECT 'Friday', 5
-    UNION SELECT 'Saturday', 6
-    UNION SELECT 'Sunday', 7
-  )
-  SELECT 
-    day,
-    hour,
-    abs(random() % 100) + 
-    CASE 
-      WHEN hour BETWEEN 9 AND 17 THEN 50
-      WHEN hour BETWEEN 18 AND 22 THEN 30
-      ELSE 10
-    END as activity_level
-  FROM days CROSS JOIN hours
-  ORDER BY day_order, hour
-
-interval: 60s
+query:
+  sql: |
+    WITH RECURSIVE hours AS (
+      SELECT 0 as hour
+      UNION ALL
+      SELECT hour + 1 FROM hours WHERE hour < 23
+    ),
+    days AS (
+      SELECT 'Monday' as day, 1 as day_order
+      UNION SELECT 'Tuesday', 2
+      UNION SELECT 'Wednesday', 3
+      UNION SELECT 'Thursday', 4
+      UNION SELECT 'Friday', 5
+      UNION SELECT 'Saturday', 6
+      UNION SELECT 'Sunday', 7
+    )
+    SELECT 
+      day,
+      hour,
+      abs(random() % 100) + 
+      CASE 
+        WHEN hour BETWEEN 9 AND 17 THEN 50
+        WHEN hour BETWEEN 18 AND 22 THEN 30
+        ELSE 10
+      END as activity_level
+    FROM days CROSS JOIN hours
+    ORDER BY day_order, hour
 
 show:
   type: heatmap
   title: "一周活动热力图"
-  
+  interval: 60s
+
   # 数据列配置
   x_column: hour
   y_column: day

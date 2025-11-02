@@ -6,37 +6,37 @@ database:
   type: sqlite
   url: "sqlite:///:memory:"
 
-query: |
-  WITH companies AS (
-    SELECT 'Apple' as company, abs(random() % 50) + 30 as revenue, 
-           abs(random() % 20) + 10 as profit_margin,
-           abs(random() % 1000) + 500 as market_cap
-    UNION SELECT 'Google', abs(random() % 45) + 25, abs(random() % 18) + 8, abs(random() % 900) + 400
-    UNION SELECT 'Microsoft', abs(random() % 40) + 35, abs(random() % 22) + 12, abs(random() % 800) + 600
-    UNION SELECT 'Amazon', abs(random() % 60) + 20, abs(random() % 15) + 5, abs(random() % 700) + 300
-    UNION SELECT 'Tesla', abs(random() % 30) + 15, abs(random() % 25) + 15, abs(random() % 600) + 200
-    UNION SELECT 'Meta', abs(random() % 35) + 20, abs(random() % 20) + 10, abs(random() % 500) + 250
-    UNION SELECT 'Netflix', abs(random() % 25) + 10, abs(random() % 18) + 8, abs(random() % 300) + 100
-    UNION SELECT 'Adobe', abs(random() % 20) + 15, abs(random() % 30) + 20, abs(random() % 400) + 150
-  )
-  SELECT 
-    company,
-    revenue,
-    profit_margin,
-    market_cap,
-    CASE 
-      WHEN market_cap > 800 THEN 'Large Cap'
-      WHEN market_cap > 400 THEN 'Mid Cap'
-      ELSE 'Small Cap'
-    END as category
-  FROM companies
-
-interval: 50s
+query:
+  sql: |
+    WITH companies AS (
+      SELECT 'Apple' as company, abs(random() % 50) + 30 as revenue, 
+             abs(random() % 20) + 10 as profit_margin,
+             abs(random() % 1000) + 500 as market_cap
+      UNION SELECT 'Google', abs(random() % 45) + 25, abs(random() % 18) + 8, abs(random() % 900) + 400
+      UNION SELECT 'Microsoft', abs(random() % 40) + 35, abs(random() % 22) + 12, abs(random() % 800) + 600
+      UNION SELECT 'Amazon', abs(random() % 60) + 20, abs(random() % 15) + 5, abs(random() % 700) + 300
+      UNION SELECT 'Tesla', abs(random() % 30) + 15, abs(random() % 25) + 15, abs(random() % 600) + 200
+      UNION SELECT 'Meta', abs(random() % 35) + 20, abs(random() % 20) + 10, abs(random() % 500) + 250
+      UNION SELECT 'Netflix', abs(random() % 25) + 10, abs(random() % 18) + 8, abs(random() % 300) + 100
+      UNION SELECT 'Adobe', abs(random() % 20) + 15, abs(random() % 30) + 20, abs(random() % 400) + 150
+    )
+    SELECT 
+      company,
+      revenue,
+      profit_margin,
+      market_cap,
+      CASE 
+        WHEN market_cap > 800 THEN 'Large Cap'
+        WHEN market_cap > 400 THEN 'Mid Cap'
+        ELSE 'Small Cap'
+      END as category
+    FROM companies
 
 show:
   type: bubble
   title: "科技公司财务指标气泡图"
-  
+  interval: 50s
+
   # 数据列配置
   x_column: revenue
   y_column: profit_margin

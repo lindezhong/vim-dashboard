@@ -7,30 +7,31 @@ database:
   type: sqlite
   url: "sqlite:///:memory:"
 
-# SQL查询语句，生成时间序列数据
-query: |
-  WITH RECURSIVE time_series AS (
-    SELECT 0 as hour, abs(random() % 100) + 50 as visitors
-    UNION ALL
-    SELECT hour + 1, 
-           abs(random() % 50) + visitors + 
-           CASE WHEN hour % 6 = 0 THEN 20 ELSE 0 END as visitors
-    FROM time_series 
-    WHERE hour < 23
-  )
-  SELECT 
-    printf('%02d:00', hour) as time_label,
-    visitors,
-    visitors * 0.8 as mobile_visitors,
-    visitors * 0.2 as desktop_visitors
-  FROM time_series
-
-interval: 60s
+# 查询配置
+query:
+  # SQL查询语句，生成时间序列数据
+  sql: |
+    WITH RECURSIVE time_series AS (
+      SELECT 0 as hour, abs(random() % 100) + 50 as visitors
+      UNION ALL
+      SELECT hour + 1, 
+             abs(random() % 50) + visitors + 
+             CASE WHEN hour % 6 = 0 THEN 20 ELSE 0 END as visitors
+      FROM time_series 
+      WHERE hour < 23
+    )
+    SELECT 
+      printf('%02d:00', hour) as time_label,
+      visitors,
+      visitors * 0.8 as mobile_visitors,
+      visitors * 0.2 as desktop_visitors
+    FROM time_series
 
 show:
   type: line
   title: "网站访问量趋势 (24小时)"
-  
+  interval: 60s
+
   # 数据配置
   x_column: time_label
   y_columns:

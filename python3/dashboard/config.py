@@ -40,9 +40,12 @@ class ConfigManager:
         config = self._normalize_config(config)
         
         # Initialize template processor if args are defined
-        if 'args' in config:
+        query_config = config.get('query', {})
+        if isinstance(query_config, dict) and 'args' in query_config:
             self.template_processor = SQLTemplateProcessor()
-            self.template_processor.process_config_parameters(config)
+            # Pass the args from query.args to the template processor
+            config_with_args = {'args': query_config['args']}
+            self.template_processor.process_config_parameters(config_with_args)
 
         self.config = config
         self.config_path = config_path
@@ -166,7 +169,14 @@ class ConfigManager:
         """Get SQL query."""
         if not self.config:
             raise ValueError("No configuration loaded")
-        return self.config.get('query', '')
+
+        query_config = self.config.get('query', '')
+
+        # Support both old format (query as string) and new format (query as dict with sql)
+        if isinstance(query_config, dict):
+            return query_config.get('sql', '')
+        else:
+            return query_config
     
     def get_interval_seconds(self) -> int:
         """Get refresh interval in seconds."""
@@ -306,4 +316,10 @@ class ConfigManager:
         if not self.config:
             return []
 
-        return self.config.get('args', [])
+        # Support both old format (args at root) and new format (args under query)
+        query_config = self.config.get('query', {})
+        if isinstance(query_config, dict) and 'args' in query_config:
+            return query_config.get('args', [])
+        else:
+            # Fallback to old format
+            return self.config.get('args', [])

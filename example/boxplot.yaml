@@ -6,34 +6,34 @@ database:
   type: sqlite
   url: "sqlite:///:memory:"
 
-query: |
-  WITH RECURSIVE data_points AS (
-    SELECT 1 as id, 
-           CASE abs(random() % 3)
-             WHEN 0 THEN 'Group A'
-             WHEN 1 THEN 'Group B'
-             ELSE 'Group C'
-           END as category,
-           abs(random() % 100) + 20 as value
-    UNION ALL
-    SELECT id + 1,
-           CASE abs(random() % 3)
-             WHEN 0 THEN 'Group A'
-             WHEN 1 THEN 'Group B'
-             ELSE 'Group C'
-           END,
-           abs(random() % 100) + 20
-    FROM data_points 
-    WHERE id < 30
-  )
-  SELECT category, value FROM data_points
-
-interval: 55s
+query:
+  sql: |
+    WITH RECURSIVE data_points AS (
+      SELECT 1 as id, 
+             CASE abs(random() % 3)
+               WHEN 0 THEN 'Group A'
+               WHEN 1 THEN 'Group B'
+               ELSE 'Group C'
+             END as category,
+             abs(random() % 100) + 20 as value
+      UNION ALL
+      SELECT id + 1,
+             CASE abs(random() % 3)
+               WHEN 0 THEN 'Group A'
+               WHEN 1 THEN 'Group B'
+               ELSE 'Group C'
+             END,
+             abs(random() % 100) + 20
+      FROM data_points 
+      WHERE id < 30
+    )
+    SELECT category, value FROM data_points
 
 show:
   type: boxplot
   title: "各组数据分布箱线图"
-  
+  interval: 55s
+
   # 数据列配置
   category_column: category
   value_column: value

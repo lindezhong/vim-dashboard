@@ -6,32 +6,32 @@ database:
   type: sqlite
   url: "sqlite:///:memory:"
 
-query: |
-  WITH RECURSIVE months AS (
-    SELECT 1 as month, 'Jan' as month_name
-    UNION ALL
-    SELECT month + 1, 
-           CASE month + 1
-             WHEN 2 THEN 'Feb' WHEN 3 THEN 'Mar' WHEN 4 THEN 'Apr'
-             WHEN 5 THEN 'May' WHEN 6 THEN 'Jun' WHEN 7 THEN 'Jul'
-             WHEN 8 THEN 'Aug' WHEN 9 THEN 'Sep' WHEN 10 THEN 'Oct'
-             WHEN 11 THEN 'Nov' WHEN 12 THEN 'Dec'
-           END
-    FROM months WHERE month < 12
-  )
-  SELECT 
-    month_name,
-    abs(random() % 50) + 20 as desktop_users,
-    abs(random() % 80) + 30 as mobile_users,
-    abs(random() % 30) + 10 as tablet_users
-  FROM months
-
-interval: 35s
+query:
+  sql: |
+    WITH RECURSIVE months AS (
+      SELECT 1 as month, 'Jan' as month_name
+      UNION ALL
+      SELECT month + 1, 
+             CASE month + 1
+               WHEN 2 THEN 'Feb' WHEN 3 THEN 'Mar' WHEN 4 THEN 'Apr'
+               WHEN 5 THEN 'May' WHEN 6 THEN 'Jun' WHEN 7 THEN 'Jul'
+               WHEN 8 THEN 'Aug' WHEN 9 THEN 'Sep' WHEN 10 THEN 'Oct'
+               WHEN 11 THEN 'Nov' WHEN 12 THEN 'Dec'
+             END
+      FROM months WHERE month < 12
+    )
+    SELECT 
+      month_name,
+      abs(random() % 50) + 20 as desktop_users,
+      abs(random() % 80) + 30 as mobile_users,
+      abs(random() % 30) + 10 as tablet_users
+    FROM months
 
 show:
   type: area
   title: "用户设备类型趋势分析"
-  
+  interval: 35s
+
   x_column: month_name
   y_columns:
     - column: desktop_users

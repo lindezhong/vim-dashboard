@@ -9,34 +9,34 @@ database:
   # 数据库连接URL，使用内存数据库，无需创建文件
   url: "sqlite:///:memory:"
 
-# SQL查询语句，生成模拟数据，无需依赖任何表
-query: |
-  SELECT 
-    datetime('now', 'localtime') as current_time,     -- 当前本地时间
-    abs(random() % 100) as random_number,             -- 0-99的随机数
-    abs(random() % 1000) as sales_amount,             -- 模拟销售金额
-    case 
-      when abs(random() % 3) = 0 then 'Active'
-      when abs(random() % 3) = 1 then 'Pending' 
-      else 'Inactive'
-    end as status,                                     -- 随机状态
-    'User' || (abs(random() % 10) + 1) as username,    -- 模拟用户名
-    "{{key1}}" as k1,
-    "{{key2}}" as k2
+# 查询配置
+query:
+  # SQL查询语句，生成模拟数据，无需依赖任何表
+  sql: |
+    SELECT 
+      datetime('now', 'localtime') as current_time,     -- 当前本地时间
+      abs(random() % 100) as random_number,             -- 0-99的随机数
+      abs(random() % 1000) as sales_amount,             -- 模拟销售金额
+      case 
+        when abs(random() % 3) = 0 then 'Active'
+        when abs(random() % 3) = 1 then 'Pending' 
+        else 'Inactive'
+      end as status,                                     -- 随机状态
+      'User' || (abs(random() % 10) + 1) as username,    -- 模拟用户名
+      "{{key1}}" as k1,
+      "{{key2}}" as k2
 
-args:
-  - key: key1
-    default: value1
-  - key: key2
-    default: value2
-
-# 刷新间隔
-interval: 30s                    # 每30秒刷新一次数据
+  args:
+    - key: key1
+      default: value1
+    - key: key2
+      default: value2
 
 # 显示配置
 show:
   type: table                     # 图表类型：表格
   title: "系统状态监控表"         # 表格标题
+  interval: 30s                   # 每30秒刷新一次数据
 
   # 列配置，定义每列的显示名称和格式
   column_list:

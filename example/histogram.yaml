@@ -6,31 +6,31 @@ database:
   type: sqlite
   url: "sqlite:///:memory:"
 
-query: |
-  WITH RECURSIVE numbers AS (
-    SELECT 1 as id, abs(random() % 100) as score
-    UNION ALL
-    SELECT id + 1, abs(random() % 100)
-    FROM numbers 
-    WHERE id < 50
-  )
-  SELECT 
-    score,
-    CASE 
-      WHEN score >= 90 THEN 'A'
-      WHEN score >= 80 THEN 'B'
-      WHEN score >= 70 THEN 'C'
-      WHEN score >= 60 THEN 'D'
-      ELSE 'F'
-    END as grade
-  FROM numbers
-
-interval: 45s
+query:
+  sql: |
+    WITH RECURSIVE numbers AS (
+      SELECT 1 as id, abs(random() % 100) as score
+      UNION ALL
+      SELECT id + 1, abs(random() % 100)
+      FROM numbers 
+      WHERE id < 50
+    )
+    SELECT 
+      score,
+      CASE 
+        WHEN score >= 90 THEN 'A'
+        WHEN score >= 80 THEN 'B'
+        WHEN score >= 70 THEN 'C'
+        WHEN score >= 60 THEN 'D'
+        ELSE 'F'
+      END as grade
+    FROM numbers
 
 show:
   type: histogram
   title: "学生成绩分布直方图"
-  
+  interval: 45s
+
   # 数据列配置
   value_column: score
   

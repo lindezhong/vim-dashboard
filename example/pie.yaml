@@ -6,28 +6,28 @@ database:
   type: sqlite
   url: "sqlite:///:memory:"
 
-query: |
-  WITH departments AS (
-    SELECT 'Research' as department, abs(random() % 500) + 200 as budget
-    UNION ALL SELECT 'Marketing', abs(random() % 400) + 150
-    UNION ALL SELECT 'Sales', abs(random() % 600) + 300
-    UNION ALL SELECT 'Engineering', abs(random() % 800) + 400
-    UNION ALL SELECT 'HR', abs(random() % 200) + 100
-    UNION ALL SELECT 'Operations', abs(random() % 300) + 150
-  )
-  SELECT 
-    department,
-    budget,
-    ROUND(budget * 100.0 / (SELECT SUM(budget) FROM departments), 1) as percentage
-  FROM departments
-  ORDER BY budget DESC
-
-interval: 40s
+query:
+  sql: |
+    WITH departments AS (
+      SELECT 'Research' as department, abs(random() % 500) + 200 as budget
+      UNION ALL SELECT 'Marketing', abs(random() % 400) + 150
+      UNION ALL SELECT 'Sales', abs(random() % 600) + 300
+      UNION ALL SELECT 'Engineering', abs(random() % 800) + 400
+      UNION ALL SELECT 'HR', abs(random() % 200) + 100
+      UNION ALL SELECT 'Operations', abs(random() % 300) + 150
+    )
+    SELECT 
+      department,
+      budget,
+      ROUND(budget * 100.0 / (SELECT SUM(budget) FROM departments), 1) as percentage
+    FROM departments
+    ORDER BY budget DESC
 
 show:
   type: pie
   title: "部门预算分配"
-  
+  interval: 40s
+
   # 数据列配置
   label_column: department
   value_column: budget

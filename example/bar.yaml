@@ -7,31 +7,31 @@ database:
   type: sqlite                    # 数据库类型
   url: "sqlite:///:memory:"         # 内存数据库，无需文件
 
-# SQL查询语句，生成模拟的产品销售数据
-query: |
-  WITH categories AS (
-    SELECT 'Electronics' as category, abs(random() % 1000) + 500 as sales
-    UNION ALL SELECT 'Clothing', abs(random() % 800) + 300
-    UNION ALL SELECT 'Books', abs(random() % 400) + 100  
-    UNION ALL SELECT 'Home', abs(random() % 600) + 200
-    UNION ALL SELECT 'Sports', abs(random() % 500) + 150
-    UNION ALL SELECT 'Food', abs(random() % 700) + 250
-  )
-  SELECT 
-    category,                     -- 产品类别
-    sales,                        -- 销售额
-    sales * 1.2 as target         -- 目标销售额（实际的120%）
-  FROM categories
-  ORDER BY sales DESC
-
-# 刷新间隔
-interval: 45s                    # 每45秒刷新一次
+# 查询配置
+query:
+  # SQL查询语句，生成模拟的产品销售数据
+  sql: |
+    WITH categories AS (
+      SELECT 'Electronics' as category, abs(random() % 1000) + 500 as sales
+      UNION ALL SELECT 'Clothing', abs(random() % 800) + 300
+      UNION ALL SELECT 'Books', abs(random() % 400) + 100  
+      UNION ALL SELECT 'Home', abs(random() % 600) + 200
+      UNION ALL SELECT 'Sports', abs(random() % 500) + 150
+      UNION ALL SELECT 'Food', abs(random() % 700) + 250
+    )
+    SELECT 
+      category,                     -- 产品类别
+      sales,                        -- 销售额
+      sales * 1.2 as target         -- 目标销售额（实际的120%）
+    FROM categories
+    ORDER BY sales DESC
 
 # 显示配置
 show:
   type: bar                       # 图表类型：柱状图
   title: "产品类别销售对比"       # 图表标题
-  
+  interval: 45s                   # 每45秒刷新一次
+
   # 数据列配置
   x_column: category              # X轴数据列（类别名称）
   y_column: sales                 # Y轴数据列（销售数据）
