@@ -126,33 +126,17 @@ class AreaChart(BaseChart):
             stacked = show_config.get('style', {}).get('stacked', True)
 
             if stacked:
-                # For stacked areas, we need to track the topmost series at each position
-                # to ensure proper line character display
-                x_to_cumulative = {}
-                x_to_top_series = {}  # Track which series is on top at each x position
+                # New approach: Mixed rendering with visible boundaries for each series
+                # Each series will have both area fill and visible boundary markers
 
-                for x_val in x_values:
-                    x_to_cumulative[x_val] = 0
-                    x_to_top_series[x_val] = -1
-
-                # First pass: calculate cumulative values and determine top series
-                for series_idx, series in enumerate(all_series):
-                    x_to_y = {}
-                    for x_val, y_val in series['points']:
-                        x_to_y[x_val] = y_val
-
-                    for x_val in x_values:
-                        if x_val in x_to_y and x_to_y[x_val] > 0:
-                            x_to_cumulative[x_val] += x_to_y[x_val]
-                            x_to_top_series[x_val] = series_idx
-
-                # Second pass: render each series
+                # Calculate cumulative values for proper stacking
                 x_to_current_base = {}
                 for x_val in x_values:
                     x_to_current_base[x_val] = 0
 
+                # Render each series with distinct visual markers
                 for series_idx, series in enumerate(all_series):
-                    char = area_chars[series_idx % len(area_chars)]
+                    area_char = area_chars[series_idx % len(area_chars)]
                     line_char = line_chars[series_idx % len(line_chars)]
 
                     # Create mapping from x to y for this series
@@ -185,21 +169,37 @@ class AreaChart(BaseChart):
                             base_y_pos = max(0, min(plot_height - 1, base_y_pos))
                             top_y_pos = max(0, min(plot_height - 1, top_y_pos))
 
-                            # Fill area from base to top
+                            # Strategy: Fill area and mark boundaries distinctly
                             for fill_y in range(top_y_pos, base_y_pos + 1):
                                 if 0 <= fill_y < plot_height:
+                                    current_char = grid[fill_y][x_pos]
+
                                     if fill_y == top_y_pos:
-                                        # Top line - show line character for topmost series, area char for others
-                                        if series_idx == x_to_top_series[x_val]:
-                                            grid[fill_y][x_pos] = line_char
-                                        else:
-                                            # For non-topmost series, use area character if position is empty
-                                            if grid[fill_y][x_pos] == ' ':
-                                                grid[fill_y][x_pos] = char
+                                        # Top boundary - always show line character for this series
+                                        grid[fill_y][x_pos] = line_char
+                                    elif fill_y == base_y_pos and series_idx > 0:
+                                        # Bottom boundary (interface with previous series)
+                                        # Use a different marker to show series boundary
+                                        if current_char == ' ':
+                                            grid[fill_y][x_pos] = '─'  # Horizontal line for boundary
                                     else:
-                                        # Fill area - only fill if empty
-                                        if grid[fill_y][x_pos] == ' ':
-                                            grid[fill_y][x_pos] = char
+                                        # Fill area - only fill empty spaces
+                                        if current_char == ' ':
+                                            grid[fill_y][x_pos] = area_char
+
+                # Post-processing: Add vertical boundary markers between series
+                # This ensures each series has visible separation
+                for i in range(plot_height):
+                    for j in range(plot_width - 1):
+                        current = grid[i][j]
+                        next_char = grid[i][j + 1]
+
+                        # If we have different area characters adjacent, add boundary
+                        if (current in area_chars and next_char in area_chars and
+                            current != next_char and current != ' ' and next_char != ' '):
+                            # Insert boundary marker
+                            if j + 1 < plot_width:
+                                grid[i][j + 1] = '│'  # Vertical boundary
             else:
                 # Non-stacked areas (overlapping)
                 for series_idx, series in enumerate(all_series):
@@ -252,8 +252,10 @@ class AreaChart(BaseChart):
             if legend_config.get('show', True) and len(all_series) > 1:
                 legend_line = "  Legend: "
                 for i, series in enumerate(all_series):
-                    char = line_chars[i % len(line_chars)]
-                    legend_line += f"{char} {series['label']}  "
+                    # Show both area and line characters for better identification
+                    area_char = area_chars[i % len(area_chars)]
+                    line_char = line_chars[i % len(line_chars)]
+                    legend_line += f"{line_char}{area_char} {series['label']}  "
                 chart_lines.append(legend_line)
                 chart_lines.append("")
 
