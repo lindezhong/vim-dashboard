@@ -1,0 +1,124 @@
+# Jinja2 模板引擎示例配置
+# 展示所有支持的参数类型和模板语法功能
+
+database:
+  type: mysql
+  url: mysql://username:password@host:port/database_name
+
+# 查询配置 - 包含SQL模板和参数定义
+query:
+  # 参数定义 - 支持多种数据类型和默认值
+  args:
+    # 字符串参数
+    - name: user_status
+      type: string
+      default: "active"
+      description: "用户状态过滤条件"
+
+    # 数字参数
+    - name: min_age
+      type: number
+      default: 18
+      description: "最小年龄"
+
+    - name: max_age
+      type: number
+      default: 65
+      description: "最大年龄"
+
+    # 布尔参数
+    - name: include_deleted
+      type: boolean
+      default: false
+      description: "是否包含已删除用户"
+
+    # 列表参数
+    - name: departments
+      type: list
+      default: ["IT", "HR", "Finance"]
+      description: "部门列表"
+
+    - name: user_ids
+      type: list
+      default: [1, 2, 3]
+      description: "用户ID列表"
+
+    # Map参数
+    - name: filters
+      type: map
+      default:
+        region: "Asia"
+        level: "senior"
+      description: "额外过滤条件"
+
+    # 可选参数（无默认值）
+    - name: search_keyword
+      type: string
+      description: "搜索关键词（可选）"
+
+  # 使用Jinja2模板语法的SQL查询
+  sql: |
+    SELECT 
+      u.id,
+      u.name,
+      u.age,
+      u.department,
+      u.status,
+      u.created_at
+    FROM users u
+    WHERE 1=1
+      {%- if user_status %}
+      AND u.status = {{ user_status | sql_quote }}
+      {%- endif %}
+      
+      {%- if min_age is defined %}
+      AND u.age >= {{ min_age }}
+      {%- endif %}
+      
+      {%- if max_age is defined %}
+      AND u.age <= {{ max_age }}
+      {%- endif %}
+      
+      {%- if not include_deleted %}
+      AND u.deleted_at IS NULL
+      {%- endif %}
+      
+      {%- if departments and departments|length > 0 %}
+      AND u.department IN {{ departments | sql_in }}
+      {%- endif %}
+      
+      {%- if user_ids and user_ids|length > 0 %}
+      AND u.id IN {{ user_ids | sql_in }}
+      {%- endif %}
+      
+      {%- if filters %}
+        {%- for key, value in filters.items() %}
+      AND u.{{ key | sql_id }} = {{ value | sql_quote }}
+        {%- endfor %}
+      {%- endif %}
+      
+      {%- if search_keyword %}
+      AND (u.name LIKE {{ ('%' + search_keyword + '%') | sql_quote }}
+           OR u.email LIKE {{ ('%' + search_keyword + '%') | sql_quote }})
+      {%- endif %}
+    
+    ORDER BY u.created_at DESC
+    {{ sql_limit(100) }}
+
+interval: 30s
+
+show:
+  type: table
+  column_list:
+    - column: id
+      alias: "用户ID"
+    - column: name
+      alias: "姓名"
+    - column: age
+      alias: "年龄"
+    - column: department
+      alias: "部门"
+    - column: status
+      alias: "状态"
+    - column: created_at
+      alias: "创建时间"
