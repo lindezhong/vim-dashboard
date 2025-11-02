@@ -272,14 +272,16 @@ show:
                 return True
 
             # Check if sidebar already exists
-            vim.command('let g:dashboard_sidebar_exists = 0')
-            vim.command('for i in range(1, winnr("$"))')
-            vim.command('  if getwinvar(i, "&filetype") == "dashboard-sidebar"')
-            vim.command('    let g:dashboard_sidebar_exists = 1')
-            vim.command('    execute i . "wincmd w"')
-            vim.command('    break')
-            vim.command('  endif')
-            vim.command('endfor')
+            vim.command('''
+let g:dashboard_sidebar_exists = 0
+for i in range(1, winnr("$"))
+  if getwinvar(i, "&filetype") == "dashboard-sidebar"
+    let g:dashboard_sidebar_exists = 1
+    execute i . "wincmd w"
+    break
+  endif
+endfor
+''')
 
             sidebar_exists = vim.eval('g:dashboard_sidebar_exists') == '1'
 
