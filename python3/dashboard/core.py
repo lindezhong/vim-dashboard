@@ -476,7 +476,8 @@ def dashboard_sidebar_select():
             config_dir = ''
 
         # Calculate selected index (skip header lines)
-        selected_index = line_num - 7  # Adjust for header lines (6 header lines + 1 for 0-based)
+        # Sidebar format: title + directory + empty + help1 + help2 + empty = 6 lines, then files start
+        selected_index = line_num - 7  # Files start from line 7 (6 header lines + 1 for 0-based)
 
         if 0 <= selected_index < len(config_files):
             selected_file = config_files[selected_index]
