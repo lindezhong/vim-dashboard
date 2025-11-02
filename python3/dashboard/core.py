@@ -392,12 +392,55 @@ for i in range(1, winnr("$") + 1)
 endfor
 ''')
 
-                            # Force focus and make it obvious
+                            # Force focus and make it obvious - AGGRESSIVE APPROACH
                             vim.command('echohl MoreMsg | echo "DEBUG: Making focus obvious..." | echohl None')
+
+                            # Method 1: Multiple forced window switches
+                            vim.command('echohl MoreMsg | echo "DEBUG: Aggressive window switching..." | echohl None')
+                            vim.command('wincmd h')  # Go to left window
+                            vim.command('wincmd l')  # Go back to right window
+                            vim.command('wincmd h')  # Go to left window again
+                            vim.command('wincmd l')  # Go back to right window again
+
+                            # Method 2: Force focus using window ID
+                            vim.command('echohl MoreMsg | echo "DEBUG: Using window ID method..." | echohl None')
+                            vim.command('''
+let dashboard_win_id = 0
+for i in range(1, winnr("$") + 1)
+  if getwinvar(i, "&filetype") == "dashboard"
+    let dashboard_win_id = win_getid(i)
+    echohl MoreMsg | echo "DEBUG: Found dashboard window ID: " . dashboard_win_id | echohl None
+    break
+  endif
+endfor
+if dashboard_win_id > 0
+  call win_gotoid(dashboard_win_id)
+  echohl MoreMsg | echo "DEBUG: Switched to window ID: " . dashboard_win_id | echohl None
+endif
+''')
+
+                            # Method 3: Force cursor visibility
+                            vim.command('echohl MoreMsg | echo "DEBUG: Force cursor visibility..." | echohl None')
                             vim.command('normal! gg')
                             vim.command('normal! zz')  # Center the screen
                             vim.command('set cursorline')
                             vim.command('redraw!')
+
+                            # Method 4: Enter and exit insert mode to force cursor update
+                            vim.command('echohl MoreMsg | echo "DEBUG: Force cursor update..." | echohl None')
+                            vim.command('startinsert')
+                            vim.command('stopinsert')
+                            vim.command('redraw!')
+
+                            # Method 5: Force window refresh
+                            vim.command('echohl MoreMsg | echo "DEBUG: Force window refresh..." | echohl None')
+                            vim.command('wincmd =')  # Equalize window sizes
+                            vim.command('redraw!')
+
+                            # Method 6: Final verification and force
+                            vim.command('echohl MoreMsg | echo "DEBUG: Final verification..." | echohl None')
+                            vim.command('echohl MoreMsg | echo "DEBUG: Current window after all fixes: " . winnr() . ", filetype: " . &filetype | echohl None')
+                            vim.command('echohl MoreMsg | echo "DEBUG: Cursor position: line " . line(".") . ", col " . col(".") | echohl None')
 
                             vim.command('echohl MoreMsg | echo "DEBUG: Focus fix completed - Current window: " . winnr() . ", filetype: " . &filetype | echohl None')
 
