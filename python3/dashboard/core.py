@@ -210,20 +210,68 @@ class DashboardCore:
 
                 # Find and stop task
                 tasks = self.scheduler.list_tasks()
+                current_task_id = None
 
                 for task_id, task_info in tasks.items():
                     if task_info['temp_file'] == current_file:
-                        success = self.scheduler.remove_task(task_id)
-                        if success:
+                        current_task_id = task_id
+                        break
 
-                            # Close the dashboard buffer
-                            vim.command('bwipeout')
+                if current_task_id:
+                    success = self.scheduler.remove_task(current_task_id)
+                    if success:
+                        # Get remaining tasks after stopping current one
+                        remaining_tasks = self.scheduler.list_tasks()
+
+                        if remaining_tasks:
+                            # Switch to the first remaining dashboard
+                            first_remaining_task = next(iter(remaining_tasks.values()))
+                            remaining_temp_file = first_remaining_task['temp_file']
+
+                            # Switch to the remaining dashboard file
+                            vim.command('set autoread')
+                            vim.command(f'silent edit {remaining_temp_file}')
+                            vim.command('setlocal filetype=dashboard')
+                            vim.command('setlocal autoread')
+                            vim.command('setlocal noswapfile')
+                            vim.command('setlocal buftype=nowrite')
+                            vim.command('setlocal readonly')
+                            vim.command('call dashboard#setup_dashboard_buffer()')
+
+                            vim.command('echohl MoreMsg | echo "Dashboard stopped, switched to remaining dashboard" | echohl None')
+                        else:
+                            # No remaining dashboards, check if we're in sidebar layout
+                            vim.command('''
+let g:dashboard_sidebar_exists = 0
+for i in range(1, winnr("$"))
+  if getwinvar(i, "&filetype") == "dashboard-sidebar"
+    let g:dashboard_sidebar_exists = 1
+    break
+  endif
+endfor
+''')
+
+                            sidebar_exists = vim.eval('g:dashboard_sidebar_exists') == '1'
+
+                            if sidebar_exists:
+                                # We're in sidebar layout, create placeholder in right window
+                                vim.command('enew')
+                                vim.command('setlocal buftype=nofile')
+                                vim.command('setlocal noswapfile')
+                                vim.command('setlocal nobuflisted')
+                                vim.command('file *')
+                                vim.current.buffer[:] = ['', '  No active dashboard', '  Select a configuration from the sidebar', '']
+                                vim.command('setlocal readonly')
+                                vim.command('setlocal nomodifiable')
+                            else:
+                                # Not in sidebar layout, close the buffer normally
+                                vim.command('bwipeout')
+
                             vim.command('echohl MoreMsg | echo "Dashboard stopped" | echohl None')
 
-                            # Refresh sidebar if it exists to update status
-                            self._refresh_sidebar_if_exists()
-                            return True
-                        break
+                        # Refresh sidebar if it exists to update status
+                        self._refresh_sidebar_if_exists()
+                        return True
 
                 vim.command('echohl ErrorMsg | echo "Current buffer is not a dashboard" | echohl None')
                 return False
