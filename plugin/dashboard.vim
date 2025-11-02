@@ -33,10 +33,10 @@ augroup DashboardPlugin
   autocmd VimEnter * call dashboard#init()
   autocmd VimLeave * call dashboard#cleanup()
   " Auto-reload dashboard temp files when they change
-  autocmd BufRead,BufEnter */dashboard/*.tmp call dashboard#setup_dashboard_buffer()
-  autocmd BufRead,BufEnter */vim-dashboard/*.tmp call dashboard#setup_dashboard_buffer()
-  autocmd FileChangedShell */dashboard/*.tmp call dashboard#handle_file_changed()
-  autocmd FileChangedShell */vim-dashboard/*.tmp call dashboard#handle_file_changed()
+  autocmd BufRead,BufEnter */dashboard/*.dashboard call dashboard#setup_dashboard_buffer()
+  autocmd BufRead,BufEnter */vim-dashboard/*.dashboard call dashboard#setup_dashboard_buffer()
+  autocmd FileChangedShell */dashboard/*.dashboard call dashboard#handle_file_changed()
+  autocmd FileChangedShell */vim-dashboard/*.dashboard call dashboard#handle_file_changed()
 augroup END
 
 " Key mappings (optional)

@@ -269,7 +269,7 @@ function! dashboard#setup_dashboard_buffer()
   if (stridx(l:current_file, l:temp_dir) == 0 ||
       \ stridx(l:current_file, 'dashboard') != -1 ||
       \ stridx(l:current_file, 'vim-dashboard') != -1) &&
-      \ l:current_file =~# '\.tmp$'
+      \ l:current_file =~# '\.dashboard$'
 
     " Set buffer options for dashboard temp files
     setlocal autoread
