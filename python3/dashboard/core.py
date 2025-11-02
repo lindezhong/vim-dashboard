@@ -218,11 +218,12 @@ class DashboardCore:
                         break
 
                 if current_task_id:
+                    # Get remaining tasks BEFORE stopping current one
+                    all_tasks = self.scheduler.list_tasks()
+                    remaining_tasks = {tid: task for tid, task in all_tasks.items() if tid != current_task_id}
+
                     success = self.scheduler.remove_task(current_task_id)
                     if success:
-                        # Get remaining tasks after stopping current one
-                        remaining_tasks = self.scheduler.list_tasks()
-
                         if remaining_tasks:
                             # Switch to the first remaining dashboard
                             first_remaining_task = next(iter(remaining_tasks.values()))
