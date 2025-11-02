@@ -730,10 +730,23 @@ def dashboard_sidebar_stop():
                                 current_file_normalized.lower() == temp_file_normalized.lower()) or \
                                (os.name != 'nt' and
                                 current_file_normalized == temp_file_normalized):
-                                # If the dashboard file is open in the right window, replace with empty buffer
-                                vim.command('enew')  # Create new empty buffer
-                                vim.command('setlocal buftype=nofile')
-                                vim.command('setlocal noswapfile')
+                                # If the dashboard file is open in the right window, replace content with empty buffer
+                                # First check if we have multiple windows to avoid closing the last window
+                                vim.command('let g:dashboard_window_count = winnr("$")')
+                                window_count = int(vim.eval('g:dashboard_window_count'))
+
+                                if window_count > 1:
+                                    # Safe to replace buffer content
+                                    vim.current.buffer[:] = ['']  # Clear buffer content
+                                    vim.command('setlocal buftype=nofile')
+                                    vim.command('setlocal noswapfile')
+                                    vim.command('setlocal nomodified')
+                                    vim.command('file [Dashboard Stopped]')  # Set buffer name
+                                else:
+                                    # Only one window, just clear content but keep file
+                                    vim.current.buffer[:] = ['Dashboard stopped. Window preserved.']
+                                    vim.command('setlocal nomodified')
+
                                 # Switch back to sidebar
                                 vim.command('wincmd h')
                             else:
