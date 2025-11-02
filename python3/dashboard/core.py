@@ -662,7 +662,7 @@ def dashboard_sidebar_restart():
 
     except Exception as e:
         import traceback
-        error_msg = f"Error in dashboard_sidebar_restart: {str(e)}\\n{traceback.format_exc()}"
+        error_msg = f"Error in dashboard_sidebar_restart: {str(e)}\n{traceback.format_exc()}"
         vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
 
 def dashboard_sidebar_stop():
