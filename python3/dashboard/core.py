@@ -834,3 +834,160 @@ def dashboard_cleanup():
     if _dashboard_core:
         _dashboard_core.cleanup()
         _dashboard_core = None
+
+# Variables management functions
+
+def dashboard_show_variables():
+    """Show variables for current dashboard."""
+    try:
+        # Get current buffer file path
+        current_file = vim.current.buffer.name
+        if not current_file:
+            vim.command('echohl ErrorMsg | echo "No active dashboard buffer" | echohl None')
+            return
+
+        # Find the task associated with this temp file
+        core = get_dashboard_core()
+        tasks = core.scheduler.list_tasks()
+
+        current_task = None
+        for task_id, task_info in tasks.items():
+            if task_info.get('temp_file') == current_file:
+                current_task = core.scheduler.get_task(task_id)
+                break
+
+        if not current_task:
+            vim.command('echohl ErrorMsg | echo "Current buffer is not a dashboard" | echohl None')
+            return
+
+        # Get variables info
+        variables_info = current_task.get_variables_info()
+
+        if not variables_info:
+            vim.command('echohl MoreMsg | echo "No variables found for current dashboard" | echohl None')
+            return
+
+        # Display variables in a new buffer
+        vim.command('new')
+        lines = ["Dashboard Variables", ""]
+
+        for var_name, var_info in variables_info.items():
+            var_type = var_info.get('type', 'string')
+            current_value = str(var_info.get('current_value', ''))
+            default_value = str(var_info.get('default_value', ''))
+            description = var_info.get('description', '')
+
+            lines.append(f"Variable: {var_name}")
+            lines.append(f"  Type: {var_type}")
+            lines.append(f"  Current Value: {current_value}")
+            lines.append(f"  Default Value: {default_value}")
+            if description:
+                lines.append(f"  Description: {description}")
+            lines.append("")
+
+        vim.current.buffer[:] = lines
+        vim.command('setlocal buftype=nofile')
+        vim.command('setlocal noswapfile')
+        vim.command('setlocal readonly')
+        vim.command('setlocal filetype=text')
+
+    except Exception as e:
+        error_msg = format_error_message(e, "Show Variables")
+        vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
+
+def dashboard_get_variables_info():
+    """Get variables info for current dashboard (used by Vim interface)."""
+    try:
+        # Get current buffer file path
+        current_file = vim.current.buffer.name
+        if not current_file:
+            return None
+
+        # Find the task associated with this temp file
+        core = get_dashboard_core()
+        tasks = core.scheduler.list_tasks()
+
+        current_task = None
+        for task_id, task_info in tasks.items():
+            if task_info.get('temp_file') == current_file:
+                current_task = core.scheduler.get_task(task_id)
+                break
+
+        if not current_task:
+            return None
+
+        # Get variables info
+        return current_task.get_variables_info()
+
+    except Exception as e:
+        return None
+
+def dashboard_update_variable(var_name: str, new_value: str):
+    """Update a variable for current dashboard."""
+    try:
+        # Get current buffer file path
+        current_file = vim.current.buffer.name
+        if not current_file:
+            vim.command('echohl ErrorMsg | echo "No active dashboard buffer" | echohl None')
+            return
+
+        # Find the task associated with this temp file
+        core = get_dashboard_core()
+        tasks = core.scheduler.list_tasks()
+
+        current_task_id = None
+        for task_id, task_info in tasks.items():
+            if task_info.get('temp_file') == current_file:
+                current_task_id = task_id
+                break
+
+        if not current_task_id:
+            vim.command('echohl ErrorMsg | echo "Current buffer is not a dashboard" | echohl None')
+            return
+
+        # Update the variable (this will trigger refresh automatically)
+        success = core.scheduler.update_variable(current_task_id, var_name, new_value)
+
+        if success:
+            vim.command(f'echohl MoreMsg | echo "Variable {var_name} updated and dashboard refreshed" | echohl None')
+        else:
+            vim.command(f'echohl ErrorMsg | echo "Failed to update variable {var_name}" | echohl None')
+
+    except Exception as e:
+        error_msg = format_error_message(e, "Update Variable")
+        vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
+
+def dashboard_reset_variables():
+    """Reset all variables to default values for current dashboard."""
+    try:
+        # Get current buffer file path
+        current_file = vim.current.buffer.name
+        if not current_file:
+            vim.command('echohl ErrorMsg | echo "No active dashboard buffer" | echohl None')
+            return
+
+        # Find the task associated with this temp file
+        core = get_dashboard_core()
+        tasks = core.scheduler.list_tasks()
+
+        current_task_id = None
+        for task_id, task_info in tasks.items():
+            if task_info.get('temp_file') == current_file:
+                current_task_id = task_id
+                break
+
+        if not current_task_id:
+            vim.command('echohl ErrorMsg | echo "Current buffer is not a dashboard" | echohl None')
+            return
+
+        # Reset variables (this will trigger refresh automatically)
+        success = core.scheduler.reset_variables(current_task_id)
+
+        if success:
+            vim.command('echohl MoreMsg | echo "All variables reset to default values and dashboard refreshed" | echohl None')
+        else:
+            vim.command('echohl ErrorMsg | echo "Failed to reset variables" | echohl None')
+
+    except Exception as e:
+        error_msg = format_error_message(e, "Reset Variables")
+        vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')

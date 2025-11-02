@@ -33,10 +33,73 @@ class DashboardTask:
         self.last_countdown_update = 0  # Track last countdown update time
         self._creation_time = time.time()  # Track task creation time for countdown
 
+        # Variables management for template engine
+        self.runtime_variables = {}  # Runtime variable overrides
+        self.variables_info = {}  # Variables metadata for display
+
         # Initialize components
         self.db_manager = DatabaseManager()
         self.config_manager = ConfigManager()
-        
+
+        # Load initial variables info
+        self._load_variables_info()
+
+    def _load_variables_info(self):
+        """Load variables information from config for display."""
+        query_config = self.config.get('query', {})
+        args = query_config.get('args', [])
+
+        self.variables_info = {}
+        for arg in args:
+            var_name = arg.get('name') or arg.get('key')
+            if var_name:
+                self.variables_info[var_name] = {
+                    'type': arg.get('type', 'string'),
+                    'default_value': arg.get('default'),
+                    'current_value': self.runtime_variables.get(var_name, arg.get('default')),
+                    'description': arg.get('description', '')
+                }
+
+    def update_variable(self, var_name: str, new_value: Any) -> bool:
+        """Update a runtime variable value."""
+        if var_name not in self.variables_info:
+            return False
+
+        # Type conversion based on variable type
+        var_type = self.variables_info[var_name]['type']
+        try:
+            if var_type == 'number':
+                new_value = float(new_value) if '.' in str(new_value) else int(new_value)
+            elif var_type == 'boolean':
+                new_value = str(new_value).lower() in ('true', '1', 'yes', 'on')
+            elif var_type == 'list':
+                if isinstance(new_value, str):
+                    # Parse comma-separated values
+                    new_value = [item.strip() for item in new_value.split(',')]
+            elif var_type == 'map':
+                if isinstance(new_value, str):
+                    # Simple key=value parsing (basic implementation)
+                    new_value = dict(item.split('=', 1) for item in new_value.split(',') if '=' in item)
+            # string type needs no conversion
+
+            self.runtime_variables[var_name] = new_value
+            self.variables_info[var_name]['current_value'] = new_value
+            return True
+
+        except (ValueError, TypeError) as e:
+            self.last_error = f"Invalid value for variable '{var_name}': {e}"
+            return False
+
+    def get_variables_info(self) -> Dict[str, Any]:
+        """Get current variables information for display."""
+        return self.variables_info.copy()
+
+    def reset_variables(self):
+        """Reset all variables to their default values."""
+        self.runtime_variables.clear()
+        for var_name, var_info in self.variables_info.items():
+            var_info['current_value'] = var_info['default_value']
+
     def should_run(self) -> bool:
         """Check if task should run based on interval."""
         current_time = time.time()
@@ -180,6 +243,10 @@ class DashboardTask:
             # Load and process configuration with template engine
             self.config_manager.load_config(self.config_file)
 
+            # Apply runtime variable overrides to template processor
+            if self.runtime_variables:
+                self.config_manager.template_processor.set_runtime_overrides(self.runtime_variables)
+
             # Get rendered SQL query (with template processing if needed)
             query = self.config_manager.get_query()
             if not query:
@@ -199,6 +266,10 @@ class DashboardTask:
                 'interval': self.interval,
                 'last_run': self.last_run
             }
+
+            # Add variables information to config for display
+            if self.variables_info:
+                config_with_countdown['_variables_info'] = self.get_variables_info()
 
             chart_content = ChartRenderer.render_chart(chart_type, data, config_with_countdown)
 
@@ -313,6 +384,58 @@ class DashboardScheduler:
             return task.execute()
         return False
     
+    def update_variable(self, task_id: str, var_name: str, new_value: Any) -> bool:
+        """Update a variable for a specific task and trigger refresh."""
+        with self.lock:
+            if task_id in self.tasks:
+                task = self.tasks[task_id]
+                if task.update_variable(var_name, new_value):
+                    # Trigger immediate refresh after variable update
+                    return task.execute()
+        return False
+
+    def update_variable_by_config_file(self, config_file: str, var_name: str, new_value: Any) -> bool:
+        """Update a variable by config file path and trigger refresh."""
+        task = self.get_task_by_config_file(config_file)
+        if task:
+            if task.update_variable(var_name, new_value):
+                # Trigger immediate refresh after variable update
+                return task.execute()
+        return False
+
+    def get_variables_info(self, task_id: str) -> Optional[Dict[str, Any]]:
+        """Get variables information for a specific task."""
+        with self.lock:
+            if task_id in self.tasks:
+                return self.tasks[task_id].get_variables_info()
+        return None
+
+    def get_variables_info_by_config_file(self, config_file: str) -> Optional[Dict[str, Any]]:
+        """Get variables information by config file path."""
+        task = self.get_task_by_config_file(config_file)
+        if task:
+            return task.get_variables_info()
+        return None
+
+    def reset_variables(self, task_id: str) -> bool:
+        """Reset all variables to default values for a specific task."""
+        with self.lock:
+            if task_id in self.tasks:
+                task = self.tasks[task_id]
+                task.reset_variables()
+                # Trigger immediate refresh after reset
+                return task.execute()
+        return False
+
+    def reset_variables_by_config_file(self, config_file: str) -> bool:
+        """Reset all variables to default values by config file path."""
+        task = self.get_task_by_config_file(config_file)
+        if task:
+            task.reset_variables()
+            # Trigger immediate refresh after reset
+            return task.execute()
+        return False
+
     def list_tasks(self) -> Dict[str, Dict[str, Any]]:
         """List all tasks with their status."""
         with self.lock:

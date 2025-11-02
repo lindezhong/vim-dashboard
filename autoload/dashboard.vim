@@ -260,7 +260,187 @@ EOF
   endif
 endfunction
 
-" Setup dashboard buffer with proper auto-reload settings
+" Handle file changed event for dashboard buffers
+function! dashboard#handle_file_changed()
+  " Only handle dashboard buffers
+  if !exists('b:is_dashboard_buffer') || !b:is_dashboard_buffer
+    return
+  endif
+
+  " Automatically reload without prompting
+  let v:fcs_choice = 'reload'
+
+  " Update stored modification time
+  if exists('b:dashboard_file_path')
+    let b:dashboard_last_mtime = getftime(b:dashboard_file_path)
+  endif
+
+  " Force reload the file
+  silent! edit!
+
+  " Show a brief message
+  redraw
+  echo "Dashboard updated via FileChangedShell"
+endfunction
+
+" Variables management functions
+
+" Show variables for current dashboard
+function! dashboard#show_variables()
+  if !s:init_python()
+    return
+  endif
+
+  try
+    execute 'python3 << EOF'
+import dashboard.core
+dashboard.core.dashboard_show_variables()
+EOF
+  catch
+    echohl ErrorMsg
+    echom 'Error showing variables: ' . v:exception
+    echohl None
+  endtry
+endfunction
+
+" Update a variable value
+function! dashboard#update_variable(var_name, new_value)
+  if !s:init_python()
+    return
+  endif
+
+  let l:var_name = a:var_name
+  let l:new_value = a:new_value
+
+  try
+    execute 'python3 << EOF'
+import dashboard.core
+dashboard.core.dashboard_update_variable(vim.eval('l:var_name'), vim.eval('l:new_value'))
+EOF
+  catch
+    echohl ErrorMsg
+    echom 'Error updating variable: ' . v:exception
+    echohl None
+  endtry
+endfunction
+
+" Interactive variable modification
+function! dashboard#modify_variable()
+  if !s:init_python()
+    return
+  endif
+
+  try
+    " First get available variables
+    execute 'python3 << EOF'
+import dashboard.core
+variables_info = dashboard.core.dashboard_get_variables_info()
+if variables_info:
+    var_names = list(variables_info.keys())
+    vim.command('let l:var_names = ' + str(var_names))
+    vim.command('let l:variables_info = ' + str(variables_info))
+else:
+    vim.command('let l:var_names = []')
+    vim.command('let l:variables_info = {}')
+EOF
+
+    if empty(l:var_names)
+      echom 'No variables found for current dashboard'
+      return
+    endif
+
+    " Show variable selection menu
+    let l:choice_list = []
+    let l:index = 0
+    for l:var_name in l:var_names
+      let l:index += 1
+      let l:var_info = get(l:variables_info, l:var_name, {})
+      let l:current_value = get(l:var_info, 'current_value', '')
+      let l:var_type = get(l:var_info, 'type', 'string')
+      let l:description = get(l:var_info, 'description', '')
+
+      let l:display_line = printf('%d. %s (%s) = %s', l:index, l:var_name, l:var_type, l:current_value)
+      if !empty(l:description)
+        let l:display_line .= ' - ' . l:description
+      endif
+      call add(l:choice_list, l:display_line)
+    endfor
+
+    " Show selection menu
+    echo "Select variable to modify:"
+    for l:line in l:choice_list
+      echo l:line
+    endfor
+
+    let l:choice = input('Enter variable number (1-' . len(l:var_names) . '): ')
+    let l:choice_num = str2nr(l:choice)
+
+    if l:choice_num < 1 || l:choice_num > len(l:var_names)
+      echom 'Invalid choice'
+      return
+    endif
+
+    let l:selected_var = l:var_names[l:choice_num - 1]
+    let l:var_info = get(l:variables_info, l:selected_var, {})
+    let l:current_value = get(l:var_info, 'current_value', '')
+    let l:var_type = get(l:var_info, 'type', 'string')
+
+    " Prompt for new value
+    echo "\nCurrent value: " . l:current_value
+    echo "Variable type: " . l:var_type
+
+    if l:var_type == 'boolean'
+      echo "Enter new value (true/false): "
+    elseif l:var_type == 'list'
+      echo "Enter new value (comma-separated): "
+    elseif l:var_type == 'map'
+      echo "Enter new value (key1=value1,key2=value2): "
+    else
+      echo "Enter new value: "
+    endif
+
+    let l:new_value = input('')
+
+    if empty(l:new_value)
+      echom 'No value entered, operation cancelled'
+      return
+    endif
+
+    " Update the variable
+    call dashboard#update_variable(l:selected_var, l:new_value)
+
+  catch
+    echohl ErrorMsg
+    echom 'Error in variable modification: ' . v:exception
+    echohl None
+  endtry
+endfunction
+
+" Reset variables to default values
+function! dashboard#reset_variables()
+  if !s:init_python()
+    return
+  endif
+
+  let l:confirm = input('Reset all variables to default values? (y/N): ')
+  if l:confirm !=? 'y'
+    echom 'Operation cancelled'
+    return
+  endif
+
+  try
+    execute 'python3 << EOF'
+import dashboard.core
+dashboard.core.dashboard_reset_variables()
+EOF
+  catch
+    echohl ErrorMsg
+    echom 'Error resetting variables: ' . v:exception
+    echohl None
+  endtry
+endfunction
+
+" Setup dashboard buffer with variable interaction mappings
 function! dashboard#setup_dashboard_buffer()
   let l:current_file = expand('%:p')
   let l:temp_dir = s:get_temp_dir()
@@ -284,6 +464,12 @@ function! dashboard#setup_dashboard_buffer()
     let b:is_dashboard_buffer = 1
     let b:dashboard_file_path = l:current_file
 
+    " Set up buffer-local key mappings for variable interaction
+    nnoremap <buffer> <silent> v :call dashboard#modify_variable()<CR>
+    nnoremap <buffer> <silent> V :call dashboard#show_variables()<CR>
+    nnoremap <buffer> <silent> r :call dashboard#restart()<CR>
+    nnoremap <buffer> <silent> R :call dashboard#reset_variables()<CR>
+
     " Set up buffer-local auto commands for file change detection
     augroup DashboardBuffer
       autocmd! * <buffer>
@@ -298,6 +484,8 @@ function! dashboard#setup_dashboard_buffer()
     " Start periodic refresh timer
     call dashboard#start_refresh_timer()
 
+    " Show help message
+    echo "Dashboard buffer keys: v=modify variable, V=show variables, r=refresh, R=reset variables"
 
   endif
 endfunction
@@ -366,27 +554,4 @@ function! dashboard#check_file_changes()
 
 
   endif
-endfunction
-
-" Handle file changed event for dashboard buffers
-function! dashboard#handle_file_changed()
-  " Only handle dashboard buffers
-  if !exists('b:is_dashboard_buffer') || !b:is_dashboard_buffer
-    return
-  endif
-
-  " Automatically reload without prompting
-  let v:fcs_choice = 'reload'
-
-  " Update stored modification time
-  if exists('b:dashboard_file_path')
-    let b:dashboard_last_mtime = getftime(b:dashboard_file_path)
-  endif
-
-  " Force reload the file
-  silent! edit!
-
-  " Show a brief message
-  redraw
-  echo "Dashboard updated via FileChangedShell"
 endfunction

@@ -26,6 +26,11 @@ command! -nargs=? -complete=file DashboardStop call dashboard#stop(<q-args>)
 command! -nargs=0 DashboardList call dashboard#list()
 command! -nargs=0 DashboardStatus call dashboard#status()
 command! -nargs=0 Dashboard call dashboard#browse()
+" Variable management commands
+command! -nargs=0 DashboardShowVariables call dashboard#show_variables()
+command! -nargs=0 DashboardModifyVariable call dashboard#modify_variable()
+command! -nargs=2 DashboardUpdateVariable call dashboard#update_variable(<q-args>)
+command! -nargs=0 DashboardResetVariables call dashboard#reset_variables()
 
 " Auto commands
 augroup DashboardPlugin

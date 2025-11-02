@@ -10,34 +10,35 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 from rich.align import Align
+from rich.table import Table
+from rich.columns import Columns
 from ..utils import format_error_message, truncate_string
-
 
 class BaseChart(ABC):
     """Abstract base class for all chart types."""
-    
+
     def __init__(self, data: List[Dict[str, Any]], config: Dict[str, Any]):
         self.data = data
         self.config = config
         self.style = config.get('style', {})
         self.console = Console(width=self._get_width(), legacy_windows=False)
-        
+
     def _get_width(self) -> Optional[int]:
         """Get chart width from config or terminal."""
         width = self.style.get('width')
         if width:
             return int(width)
-        
+
         # Auto-detect terminal width
         try:
             return shutil.get_terminal_size().columns
         except:
             return 80  # Default fallback
-    
+
     def _get_height(self) -> int:
         """Get chart height from config."""
         return int(self.style.get('height', 20))
-    
+
     def _get_title(self) -> Optional[str]:
         """Get chart title."""
         base_title = self.config.get('title') or self.style.get('title')
@@ -53,61 +54,116 @@ class BaseChart(ABC):
                     return f"Dashboard | Next refresh: {countdown_display}"
 
         return base_title
-    
+
     def _get_title_style(self) -> str:
         """Get title style."""
         return self.style.get('title_style', 'bold magenta')
-    
+
     def _format_title(self, title: str) -> Text:
         """Format chart title with style."""
         return Text(title, style=self._get_title_style())
-    
+
+    def _render_variables_info(self) -> Optional[Panel]:
+        """Render variables information panel if variables exist."""
+        variables_info = self.config.get('_variables_info')
+        if not variables_info:
+            return None
+
+        # Create variables table
+        variables_table = Table(show_header=True, header_style="bold blue", box=None)
+        variables_table.add_column("Variable", style="cyan", width=20)
+        variables_table.add_column("Type", style="yellow", width=10)
+        variables_table.add_column("Current Value", style="green", width=25)
+        variables_table.add_column("Description", style="dim", width=30)
+
+        # Add each variable to the table
+        for var_name, var_info in variables_info.items():
+            var_type = var_info.get('type', 'string')
+            current_value = str(var_info.get('current_value', ''))
+            description = var_info.get('description', '')
+
+            # Truncate long values for display
+            if len(current_value) > 23:
+                current_value = current_value[:20] + "..."
+            if len(description) > 28:
+                description = description[:25] + "..."
+
+            variables_table.add_row(var_name, var_type, current_value, description)
+
+        # Create help text
+        help_text = Text("Press 'v' to modify variables, 'r' to refresh", style="dim italic")
+
+        # Combine table and help text
+        content = Columns([variables_table, help_text], equal=False, expand=True)
+
+        return Panel(
+            content,
+            title="[bold cyan]Variables[/bold cyan]",
+            border_style="cyan",
+            padding=(0, 1)
+        )
+
     def _create_panel(self, content: Union[str, Text], title: Optional[str] = None) -> Panel:
         """Create a Rich panel with optional title."""
         panel_title = None
         if title:
             panel_title = self._format_title(title)
-        
+
         border_style = self.style.get('border_style', 'blue')
-        
+
         return Panel(
             content,
             title=panel_title,
             border_style=border_style,
             padding=(0, 1)
         )
-    
+
     def _handle_empty_data(self) -> str:
         """Handle case when no data is available."""
         message = "No data available"
         return str(Align.center(Text(message, style="dim")))
-    
+
     def _handle_error(self, error: Exception) -> str:
         """Handle rendering errors."""
         error_msg = format_error_message(error, "Chart Rendering")
         return str(Align.center(Text(error_msg, style="bold red")))
-    
+
     @abstractmethod
     def render(self) -> str:
         """Render the chart and return as string."""
         pass
-    
+
     def render_to_string(self) -> str:
         """Render chart to string with error handling."""
         try:
+            # Render variables info panel if available
+            variables_panel = self._render_variables_info()
+
+            # Render main chart content
             if not self.data:
-                content = self._handle_empty_data()
+                chart_content = self._handle_empty_data()
             else:
-                content = self.render()
-            
+                chart_content = self.render()
+
+            # Create main chart panel
             title = self._get_title()
             if title:
-                panel = self._create_panel(content, title)
-                with self.console.capture() as capture:
-                    self.console.print(panel)
-                return capture.get()
+                chart_panel = self._create_panel(chart_content, title)
             else:
-                return content
+                chart_panel = chart_content
+
+            # Combine variables panel and chart
+            with self.console.capture() as capture:
+                if variables_panel:
+                    self.console.print(variables_panel)
+                    self.console.print()  # Add spacing
+
+                if isinstance(chart_panel, Panel):
+                    self.console.print(chart_panel)
+                else:
+                    self.console.print(chart_panel)
+
+            return capture.get()
                 
         except Exception as e:
             return self._handle_error(e)
