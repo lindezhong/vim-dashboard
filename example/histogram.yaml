@@ -1,0 +1,63 @@
+# 直方图样例配置
+# 功能说明：展示数据分布情况，显示各个数值区间的频次分布
+# 适用场景：数据分布分析、质量控制、统计分析等
+
+database:
+  type: sqlite
+  url: "sqlite:///:memory:"
+
+query: |
+  WITH RECURSIVE numbers AS (
+    SELECT 1 as id, abs(random() % 100) as score
+    UNION ALL
+    SELECT id + 1, abs(random() % 100)
+    FROM numbers 
+    WHERE id < 50
+  )
+  SELECT 
+    score,
+    CASE 
+      WHEN score >= 90 THEN 'A'
+      WHEN score >= 80 THEN 'B'
+      WHEN score >= 70 THEN 'C'
+      WHEN score >= 60 THEN 'D'
+      ELSE 'F'
+    END as grade
+  FROM numbers
+
+interval: 45s
+
+show:
+  type: histogram
+  title: "学生成绩分布直方图"
+  
+  # 数据列配置
+  value_column: score
+  
+  # 直方图配置
+  bins: 10
+  
+  # 样式配置
+  style:
+    color: "#3498db"
+    alpha: 0.7
+    edge_color: "#2c3e50"
+    edge_width: 1
+    
+  # 坐标轴配置
+  axes:
+    x_axis:
+      title: "分数"
+      show_grid: true
+    y_axis:
+      title: "频次"
+      show_grid: true
+      
+  # 统计信息显示
+  statistics:
+    show_mean: true
+    show_median: true
+    show_std: true
+    
+  show_countdown: true
+  countdown_format: "刷新: {time}s"

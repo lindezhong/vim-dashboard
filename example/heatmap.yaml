@@ -1,0 +1,76 @@
+# 热力图样例配置
+# 功能说明：展示二维数据的密度分布，通过颜色深浅表示数值大小
+# 适用场景：相关性分析、时间热点分析、地理数据可视化等
+
+database:
+  type: sqlite
+  url: "sqlite:///:memory:"
+
+query: |
+  WITH RECURSIVE hours AS (
+    SELECT 0 as hour
+    UNION ALL
+    SELECT hour + 1 FROM hours WHERE hour < 23
+  ),
+  days AS (
+    SELECT 'Monday' as day, 1 as day_order
+    UNION SELECT 'Tuesday', 2
+    UNION SELECT 'Wednesday', 3
+    UNION SELECT 'Thursday', 4
+    UNION SELECT 'Friday', 5
+    UNION SELECT 'Saturday', 6
+    UNION SELECT 'Sunday', 7
+  )
+  SELECT 
+    day,
+    hour,
+    abs(random() % 100) + 
+    CASE 
+      WHEN hour BETWEEN 9 AND 17 THEN 50
+      WHEN hour BETWEEN 18 AND 22 THEN 30
+      ELSE 10
+    END as activity_level
+  FROM days CROSS JOIN hours
+  ORDER BY day_order, hour
+
+interval: 60s
+
+show:
+  type: heatmap
+  title: "一周活动热力图"
+  
+  # 数据列配置
+  x_column: hour
+  y_column: day
+  value_column: activity_level
+  
+  # 热力图样式配置
+  style:
+    # 颜色映射方案
+    colormap: "Blues"
+    # 是否显示数值
+    show_values: true
+    # 数值格式
+    value_format: "{:.0f}"
+    # 字体大小
+    font_size: 8
+    # 网格线配置
+    grid_color: "white"
+    grid_width: 1
+    
+  # 颜色条配置
+  colorbar:
+    show: true
+    title: "活动强度"
+    position: "right"
+    
+  # 坐标轴配置
+  axes:
+    x_axis:
+      title: "小时"
+      tick_format: "{:02d}:00"
+    y_axis:
+      title: "星期"
+      
+  show_countdown: true
+  countdown_format: "热力图更新: {time}s"

@@ -1,0 +1,70 @@
+# 饼图样例配置
+# 功能说明：展示各个部门的预算分配比例，用饼图形式直观显示占比关系
+# 适用场景：比例分析、预算分配、市场份额展示等
+
+database:
+  type: sqlite
+  url: "sqlite:///:memory:"
+
+query: |
+  WITH departments AS (
+    SELECT 'Research' as department, abs(random() % 500) + 200 as budget
+    UNION ALL SELECT 'Marketing', abs(random() % 400) + 150
+    UNION ALL SELECT 'Sales', abs(random() % 600) + 300
+    UNION ALL SELECT 'Engineering', abs(random() % 800) + 400
+    UNION ALL SELECT 'HR', abs(random() % 200) + 100
+    UNION ALL SELECT 'Operations', abs(random() % 300) + 150
+  )
+  SELECT 
+    department,
+    budget,
+    ROUND(budget * 100.0 / (SELECT SUM(budget) FROM departments), 1) as percentage
+  FROM departments
+  ORDER BY budget DESC
+
+interval: 40s
+
+show:
+  type: pie
+  title: "部门预算分配"
+  
+  # 数据列配置
+  label_column: department
+  value_column: budget
+  
+  # 饼图样式配置
+  style:
+    # 是否显示百分比
+    show_percentages: true
+    # 是否显示数值
+    show_values: true
+    # 数值格式
+    value_format: "¥{:,.0f}"
+    # 百分比格式
+    percentage_format: "{:.1f}%"
+    # 是否显示标签
+    show_labels: true
+    
+  # 颜色配置
+  colors:
+    - "#FF6B6B"
+    - "#4ECDC4" 
+    - "#45B7D1"
+    - "#96CEB4"
+    - "#FFEAA7"
+    - "#DDA0DD"
+    
+  # 图例配置
+  legend:
+    show: true
+    position: right
+    
+  # 分离配置（突出显示某些扇形）
+  explode:
+    # 突出显示最大的扇形
+    auto_explode_max: true
+    # 突出距离
+    explode_distance: 0.1
+    
+  show_countdown: true
+  countdown_format: "刷新倒计时: {time}s"

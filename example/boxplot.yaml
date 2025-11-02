@@ -1,0 +1,74 @@
+# 箱线图样例配置
+# 功能说明：展示数据的分布特征，包括中位数、四分位数、异常值等统计信息
+# 适用场景：数据质量分析、异常值检测、分组数据对比等
+
+database:
+  type: sqlite
+  url: "sqlite:///:memory:"
+
+query: |
+  WITH RECURSIVE data_points AS (
+    SELECT 1 as id, 
+           CASE abs(random() % 3)
+             WHEN 0 THEN 'Group A'
+             WHEN 1 THEN 'Group B'
+             ELSE 'Group C'
+           END as category,
+           abs(random() % 100) + 20 as value
+    UNION ALL
+    SELECT id + 1,
+           CASE abs(random() % 3)
+             WHEN 0 THEN 'Group A'
+             WHEN 1 THEN 'Group B'
+             ELSE 'Group C'
+           END,
+           abs(random() % 100) + 20
+    FROM data_points 
+    WHERE id < 30
+  )
+  SELECT category, value FROM data_points
+
+interval: 55s
+
+show:
+  type: boxplot
+  title: "各组数据分布箱线图"
+  
+  # 数据列配置
+  category_column: category
+  value_column: value
+  
+  # 箱线图样式配置
+  style:
+    # 箱体颜色
+    box_color: "#3498db"
+    # 中位数线颜色
+    median_color: "#e74c3c"
+    # 异常值颜色
+    outlier_color: "#f39c12"
+    # 箱体透明度
+    alpha: 0.7
+    # 是否显示异常值
+    show_outliers: true
+    # 是否显示均值
+    show_means: true
+    
+  # 坐标轴配置
+  axes:
+    x_axis:
+      title: "分组"
+      show_grid: false
+    y_axis:
+      title: "数值"
+      show_grid: true
+      format: "{:.1f}"
+      
+  # 统计信息配置
+  statistics:
+    # 是否显示统计标签
+    show_labels: true
+    # 标签格式
+    label_format: "中位数: {median:.1f}"
+    
+  show_countdown: true
+  countdown_format: "更新倒计时: {time}s"

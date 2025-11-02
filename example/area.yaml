@@ -1,0 +1,66 @@
+# 面积图样例配置
+# 功能说明：展示多个指标随时间变化的累积趋势，适合显示堆叠数据
+# 适用场景：累积趋势分析、多指标对比、资源使用监控等
+
+database:
+  type: sqlite
+  url: "sqlite:///:memory:"
+
+query: |
+  WITH RECURSIVE months AS (
+    SELECT 1 as month, 'Jan' as month_name
+    UNION ALL
+    SELECT month + 1, 
+           CASE month + 1
+             WHEN 2 THEN 'Feb' WHEN 3 THEN 'Mar' WHEN 4 THEN 'Apr'
+             WHEN 5 THEN 'May' WHEN 6 THEN 'Jun' WHEN 7 THEN 'Jul'
+             WHEN 8 THEN 'Aug' WHEN 9 THEN 'Sep' WHEN 10 THEN 'Oct'
+             WHEN 11 THEN 'Nov' WHEN 12 THEN 'Dec'
+           END
+    FROM months WHERE month < 12
+  )
+  SELECT 
+    month_name,
+    abs(random() % 50) + 20 as desktop_users,
+    abs(random() % 80) + 30 as mobile_users,
+    abs(random() % 30) + 10 as tablet_users
+  FROM months
+
+interval: 35s
+
+show:
+  type: area
+  title: "用户设备类型趋势分析"
+  
+  x_column: month_name
+  y_columns:
+    - column: desktop_users
+      label: "桌面端用户"
+      color: "#3498db"
+    - column: mobile_users
+      label: "移动端用户"
+      color: "#e74c3c"
+    - column: tablet_users
+      label: "平板端用户"
+      color: "#2ecc71"
+  
+  style:
+    stacked: true
+    alpha: 0.6
+    line_width: 2
+    
+  axes:
+    x_axis:
+      title: "月份"
+      show_grid: false
+    y_axis:
+      title: "用户数量"
+      show_grid: true
+      format: "{:,.0f}"
+      
+  legend:
+    show: true
+    position: top_left
+    
+  show_countdown: true
+  countdown_format: "更新中: {time}s"

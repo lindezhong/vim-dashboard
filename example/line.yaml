@@ -1,0 +1,80 @@
+# 折线图样例配置
+# 功能说明：展示时间序列数据的趋势变化，模拟网站访问量随时间的变化趋势
+# 适用场景：趋势分析、时间序列监控、性能指标跟踪等
+
+# 数据库配置
+database:
+  type: sqlite
+  url: "sqlite:///:memory:"
+
+# SQL查询语句，生成时间序列数据
+query: |
+  WITH RECURSIVE time_series AS (
+    SELECT 0 as hour, abs(random() % 100) + 50 as visitors
+    UNION ALL
+    SELECT hour + 1, 
+           abs(random() % 50) + visitors + 
+           CASE WHEN hour % 6 = 0 THEN 20 ELSE 0 END as visitors
+    FROM time_series 
+    WHERE hour < 23
+  )
+  SELECT 
+    printf('%02d:00', hour) as time_label,
+    visitors,
+    visitors * 0.8 as mobile_visitors,
+    visitors * 0.2 as desktop_visitors
+  FROM time_series
+
+interval: 60s
+
+show:
+  type: line
+  title: "网站访问量趋势 (24小时)"
+  
+  # 数据配置
+  x_column: time_label
+  y_columns:
+    - column: visitors
+      label: "总访问量"
+      color: "#3498db"
+      line_style: solid
+      marker: circle
+    - column: mobile_visitors  
+      label: "移动端访问"
+      color: "#e74c3c"
+      line_style: dashed
+      marker: square
+    - column: desktop_visitors
+      label: "桌面端访问"
+      color: "#2ecc71"
+      line_style: dotted
+      marker: triangle
+  
+  # 线条样式配置
+  line_style:
+    width: 2
+    smooth: true
+    fill_area: false
+    show_points: true
+    point_size: 4
+    
+  # 坐标轴配置
+  axes:
+    x_axis:
+      title: "时间"
+      show_grid: true
+      grid_style: dotted
+      label_rotation: 45
+    y_axis:
+      title: "访问量"
+      show_grid: true
+      min_value: 0
+      format: "{:,.0f}"
+      
+  # 图例配置
+  legend:
+    show: true
+    position: top_right
+    
+  show_countdown: true
+  countdown_format: "更新倒计时: {time}s"

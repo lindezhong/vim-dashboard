@@ -1,0 +1,94 @@
+# 气泡图样例配置
+# 功能说明：展示三维数据关系，通过X、Y坐标和气泡大小表示三个维度的数据
+# 适用场景：多维数据分析、市场分析、风险评估等
+
+database:
+  type: sqlite
+  url: "sqlite:///:memory:"
+
+query: |
+  WITH companies AS (
+    SELECT 'Apple' as company, abs(random() % 50) + 30 as revenue, 
+           abs(random() % 20) + 10 as profit_margin,
+           abs(random() % 1000) + 500 as market_cap
+    UNION SELECT 'Google', abs(random() % 45) + 25, abs(random() % 18) + 8, abs(random() % 900) + 400
+    UNION SELECT 'Microsoft', abs(random() % 40) + 35, abs(random() % 22) + 12, abs(random() % 800) + 600
+    UNION SELECT 'Amazon', abs(random() % 60) + 20, abs(random() % 15) + 5, abs(random() % 700) + 300
+    UNION SELECT 'Tesla', abs(random() % 30) + 15, abs(random() % 25) + 15, abs(random() % 600) + 200
+    UNION SELECT 'Meta', abs(random() % 35) + 20, abs(random() % 20) + 10, abs(random() % 500) + 250
+    UNION SELECT 'Netflix', abs(random() % 25) + 10, abs(random() % 18) + 8, abs(random() % 300) + 100
+    UNION SELECT 'Adobe', abs(random() % 20) + 15, abs(random() % 30) + 20, abs(random() % 400) + 150
+  )
+  SELECT 
+    company,
+    revenue,
+    profit_margin,
+    market_cap,
+    CASE 
+      WHEN market_cap > 800 THEN 'Large Cap'
+      WHEN market_cap > 400 THEN 'Mid Cap'
+      ELSE 'Small Cap'
+    END as category
+  FROM companies
+
+interval: 50s
+
+show:
+  type: bubble
+  title: "科技公司财务指标气泡图"
+  
+  # 数据列配置
+  x_column: revenue
+  y_column: profit_margin
+  size_column: market_cap
+  color_column: category
+  label_column: company
+  
+  # 气泡样式配置
+  style:
+    # 气泡大小范围
+    min_size: 10
+    max_size: 100
+    # 透明度
+    alpha: 0.6
+    # 边框配置
+    edge_width: 1
+    edge_color: "#2c3e50"
+    
+  # 颜色配置
+  colors:
+    "Large Cap": "#e74c3c"
+    "Mid Cap": "#f39c12"
+    "Small Cap": "#3498db"
+    
+  # 坐标轴配置
+  axes:
+    x_axis:
+      title: "营收 (十亿美元)"
+      show_grid: true
+      format: "${:.0f}B"
+    y_axis:
+      title: "利润率 (%)"
+      show_grid: true
+      format: "{:.1f}%"
+      
+  # 标签配置
+  labels:
+    show: true
+    font_size: 9
+    offset_x: 5
+    offset_y: 5
+    
+  # 图例配置
+  legend:
+    show: true
+    position: "top_right"
+    title: "市值分类"
+    
+  # 工具提示配置
+  tooltip:
+    show: true
+    format: "{company}: 营收${revenue}B, 利润率{profit_margin}%, 市值${market_cap}B"
+    
+  show_countdown: true
+  countdown_format: "气泡图更新: {time}s"
