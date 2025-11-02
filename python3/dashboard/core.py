@@ -657,7 +657,19 @@ def dashboard_sidebar_stop():
                 # Close the temp file if it's open in any window
                 if os.path.exists(temp_file):
                     # Find and close the buffer containing the temp file
-                    vim.command(f'silent! bwipeout {temp_file}')
+                    # First, check if the file is currently open in the right window
+                    vim.command('wincmd l')  # Switch to right window
+                    current_file = vim.current.buffer.name
+                    if current_file and os.path.samefile(current_file, temp_file):
+                        # If the dashboard file is open in the right window, close it
+                        vim.command('close')
+                        # Switch back to sidebar
+                        vim.command('wincmd h')
+                    else:
+                        # Switch back to sidebar
+                        vim.command('wincmd h')
+                        # Close the buffer if it exists anywhere
+                        vim.command(f'silent! bwipeout {temp_file}')
 
                 # Refresh sidebar to update status
                 dashboard_browser()
