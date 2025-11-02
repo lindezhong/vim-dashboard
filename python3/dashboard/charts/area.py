@@ -126,12 +126,31 @@ class AreaChart(BaseChart):
             stacked = show_config.get('style', {}).get('stacked', True)
 
             if stacked:
-                # For stacked areas, accumulate values
+                # For stacked areas, we need to track the topmost series at each position
+                # to ensure proper line character display
                 x_to_cumulative = {}
+                x_to_top_series = {}  # Track which series is on top at each x position
+
                 for x_val in x_values:
                     x_to_cumulative[x_val] = 0
+                    x_to_top_series[x_val] = -1
 
-                # Process each series and stack them
+                # First pass: calculate cumulative values and determine top series
+                for series_idx, series in enumerate(all_series):
+                    x_to_y = {}
+                    for x_val, y_val in series['points']:
+                        x_to_y[x_val] = y_val
+
+                    for x_val in x_values:
+                        if x_val in x_to_y and x_to_y[x_val] > 0:
+                            x_to_cumulative[x_val] += x_to_y[x_val]
+                            x_to_top_series[x_val] = series_idx
+
+                # Second pass: render each series
+                x_to_current_base = {}
+                for x_val in x_values:
+                    x_to_current_base[x_val] = 0
+
                 for series_idx, series in enumerate(all_series):
                     char = area_chars[series_idx % len(area_chars)]
                     line_char = line_chars[series_idx % len(line_chars)]
@@ -143,13 +162,13 @@ class AreaChart(BaseChart):
 
                     # Plot this series stacked on previous ones
                     for i, x_val in enumerate(x_values):
-                        if x_val in x_to_y:
+                        if x_val in x_to_y and x_to_y[x_val] > 0:
                             y_val = x_to_y[x_val]
-                            base_y = x_to_cumulative[x_val]
+                            base_y = x_to_current_base[x_val]
                             top_y = base_y + y_val
 
-                            # Update cumulative for next series
-                            x_to_cumulative[x_val] = top_y
+                            # Update current base for next series
+                            x_to_current_base[x_val] = top_y
 
                             # Calculate positions
                             x_pos = int(i / (len(x_values) - 1) * (plot_width - 1)) if len(x_values) > 1 else plot_width // 2
@@ -170,11 +189,17 @@ class AreaChart(BaseChart):
                             for fill_y in range(top_y_pos, base_y_pos + 1):
                                 if 0 <= fill_y < plot_height:
                                     if fill_y == top_y_pos:
-                                        # Top line
-                                        grid[fill_y][x_pos] = line_char
+                                        # Top line - show line character for topmost series, area char for others
+                                        if series_idx == x_to_top_series[x_val]:
+                                            grid[fill_y][x_pos] = line_char
+                                        else:
+                                            # For non-topmost series, use area character if position is empty
+                                            if grid[fill_y][x_pos] == ' ':
+                                                grid[fill_y][x_pos] = char
                                     else:
-                                        # Fill area
-                                        grid[fill_y][x_pos] = char
+                                        # Fill area - only fill if empty
+                                        if grid[fill_y][x_pos] == ' ':
+                                            grid[fill_y][x_pos] = char
             else:
                 # Non-stacked areas (overlapping)
                 for series_idx, series in enumerate(all_series):
