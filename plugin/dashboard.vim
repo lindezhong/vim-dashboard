@@ -29,7 +29,7 @@ command! -nargs=0 Dashboard call dashboard#browse()
 " Variable management commands
 command! -nargs=0 DashboardShowVariables call dashboard#show_variables()
 command! -nargs=0 DashboardModifyVariable call dashboard#modify_variable()
-command! -nargs=2 DashboardUpdateVariable call dashboard#update_variable(<q-args>)
+command! -nargs=* DashboardUpdateVariable call dashboard#update_variable(<f-args>)
 command! -nargs=0 DashboardResetVariables call dashboard#reset_variables()
 
 " Auto commands
