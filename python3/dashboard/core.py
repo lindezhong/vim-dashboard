@@ -208,10 +208,8 @@ class DashboardCore:
                     vim.command('echohl None')
                     return False
             else:
-                vim.command('echo "DEBUG: Stopping current buffer dashboard"')
                 # Stop current buffer's dashboard
                 current_file = vim.current.buffer.name
-                vim.command(f'echo "DEBUG: Current file: {current_file}"')
 
                 if not current_file:
                     vim.command('echohl ErrorMsg | echo "No active dashboard buffer" | echohl None')
@@ -219,22 +217,33 @@ class DashboardCore:
 
                 # Find and stop task
                 tasks = self.scheduler.list_tasks()
-                vim.command(f'echo "DEBUG: Found {len(tasks)} running tasks"')
 
                 for task_id, task_info in tasks.items():
-                    vim.command(f'echo "DEBUG: Checking task {task_id}, temp_file: {task_info["temp_file"]}"')
                     if task_info['temp_file'] == current_file:
-                        vim.command('echo "DEBUG: Found matching task, removing it"')
                         success = self.scheduler.remove_task(task_id)
                         if success:
-                            vim.command('echo "DEBUG: Task removed, closing current buffer"')
-                            # Close current buffer
-                            vim.command('bwipeout')
+
+                            # Instead of closing the window, replace buffer content and make it empty
+                            # Check if we have multiple windows to avoid closing the last window
+                            vim.command('let g:dashboard_window_count = winnr("$")')
+                            window_count = int(vim.eval('g:dashboard_window_count'))
+
+                            if window_count > 1:
+                                # Safe to replace buffer content while preserving window layout
+                                vim.current.buffer[:] = ['Dashboard stopped. Use :Dashboard to start a new one.']
+                                vim.command('setlocal buftype=nofile')
+                                vim.command('setlocal noswapfile')
+                                vim.command('setlocal nomodified')
+                                vim.command('file [Dashboard Stopped]')  # Set buffer name
+                            else:
+                                # Only one window, just clear content but keep window
+                                vim.current.buffer[:] = ['Dashboard stopped. Window preserved.', '', 'Use :Dashboard to start a new dashboard.']
+                                vim.command('setlocal nomodified')
+
                             vim.command('echohl MoreMsg | echo "Dashboard stopped" | echohl None')
                             return True
                         break
 
-                vim.command('echo "DEBUG: No matching task found"')
                 vim.command('echohl ErrorMsg | echo "Current buffer is not a dashboard" | echohl None')
                 return False
 
@@ -247,31 +256,23 @@ class DashboardCore:
     def _close_dashboard_file(self, temp_file: str):
         """Helper function to close dashboard file."""
         try:
-            vim.command(f'echo "DEBUG: _close_dashboard_file called for: {temp_file}"')
-
             # Normalize paths for comparison
             temp_file_normalized = os.path.normpath(temp_file)
-            vim.command(f'echo "DEBUG: Normalized path: {temp_file_normalized}"')
 
             # First, try to close the buffer directly
             vim.command(f'silent! bwipeout {temp_file_normalized}')
-            vim.command('echo "DEBUG: Executed bwipeout command"')
 
             # Check all windows to see if the file is still open
             vim.command('''
 let g:dashboard_file_closed = 1
 for i in range(1, winnr("$"))
   let bufname = bufname(winbufnr(i))
-  if bufname != ""
-    echom "DEBUG: Window " . i . " has buffer: " . bufname
-  endif
 endfor
 ''')
 
         except Exception as e:
             import traceback
-            vim.command(f'echo "DEBUG: Error in _close_dashboard_file: {str(e)}"')
-            vim.command(f'echo "DEBUG: Traceback: {traceback.format_exc()}"')
+            vim.command(f'echohl ErrorMsg | echo "Error closing dashboard file: {str(e)}" | echohl None')
     
     def list_dashboards(self) -> bool:
         """List all running dashboards."""
@@ -520,12 +521,8 @@ def dashboard_open_selected():
 def dashboard_sidebar_select():
     """Handle selection from sidebar."""
     try:
-        # Debug: Show that function is called
-        vim.command('echo "DEBUG: dashboard_sidebar_select called"')
-
         # Get current line number
         line_num = vim.current.window.cursor[0]
-        vim.command(f'echo "DEBUG: Current line: {line_num}"')
 
         # Get config files from vim variable
         try:
@@ -533,36 +530,27 @@ def dashboard_sidebar_select():
             if not isinstance(config_files, list):
                 config_files = []
         except Exception as e:
-            vim.command(f'echo "DEBUG: Error getting config_files: {str(e)}"')
             config_files = []
         try:
             config_dir = vim.eval('g:dashboard_config_dir')
             if not isinstance(config_dir, str):
                 config_dir = ''
         except Exception as e:
-            vim.command(f'echo "DEBUG: Error getting config_dir: {str(e)}"')
             config_dir = ''
-
-        vim.command(f'echo "DEBUG: Config files: {len(config_files)} items"')
-        vim.command(f'echo "DEBUG: Config dir: {config_dir}"')
 
         # Calculate selected index (skip header lines)
         # Sidebar format: title + directory + empty + help1 + help2 + empty = 6 lines, then files start
         selected_index = line_num - 7  # Files start from line 7 (6 header lines + 1 for 0-based)
-        vim.command(f'echo "DEBUG: Selected index: {selected_index}"')
 
         if 0 <= selected_index < len(config_files):
             selected_file = config_files[selected_index]
             full_path = os.path.join(config_dir, selected_file)
-            vim.command(f'echo "DEBUG: Selected file: {selected_file}"')
-            vim.command(f'echo "DEBUG: Full path: {full_path}"')
 
             # Check if dashboard is already running for this config
             core = get_dashboard_core()
             existing_task = core.scheduler.get_task_by_config_file(full_path)
 
             if existing_task:
-                vim.command('echo "DEBUG: Dashboard is running, opening temp file"')
                 # Dashboard is running, open the temp file
                 temp_file = existing_task.get_temp_file_path()
                 if os.path.exists(temp_file):
@@ -584,15 +572,12 @@ def dashboard_sidebar_select():
                 else:
                     vim.command('echohl ErrorMsg | echo "Dashboard temp file not found" | echohl None')
             else:
-                vim.command('echo "DEBUG: Dashboard not running, starting it"')
                 # Dashboard not running, start it
                 # Switch to right window first so dashboard_start opens file there
                 vim.command('wincmd l')
                 success = dashboard_start(full_path)
 
                 if success:
-                    # dashboard_start already opened the file in the right window
-                    vim.command('echo "DEBUG: Dashboard started successfully"')
 
                     # Update sidebar status (switch back to sidebar first)
                     vim.command('wincmd h')
@@ -613,11 +598,8 @@ def dashboard_sidebar_select():
 def dashboard_sidebar_restart():
     """Restart selected dashboard from sidebar."""
     try:
-        vim.command('echo "DEBUG: dashboard_sidebar_restart called"')
-
         # Get current line number
         line_num = vim.current.window.cursor[0]
-        vim.command(f'echo "DEBUG: Current line: {line_num}"')
 
         # Get config files from vim variable
         try:
@@ -625,24 +607,20 @@ def dashboard_sidebar_restart():
             if not isinstance(config_files, list):
                 config_files = []
         except Exception as e:
-            vim.command(f'echo "DEBUG: Error getting config_files: {str(e)}"')
             config_files = []
         try:
             config_dir = vim.eval('g:dashboard_config_dir')
             if not isinstance(config_dir, str):
                 config_dir = ''
         except Exception as e:
-            vim.command(f'echo "DEBUG: Error getting config_dir: {str(e)}"')
             config_dir = ''
 
         # Calculate selected index (skip header lines)
         selected_index = line_num - 7  # Files start from line 7
-        vim.command(f'echo "DEBUG: Selected index: {selected_index}"')
 
         if 0 <= selected_index < len(config_files):
             selected_file = config_files[selected_index]
             full_path = os.path.join(config_dir, selected_file)
-            vim.command(f'echo "DEBUG: Restarting: {selected_file}"')
 
             # Check if dashboard is running for this config
             core = get_dashboard_core()
@@ -668,11 +646,8 @@ def dashboard_sidebar_restart():
 def dashboard_sidebar_stop():
     """Stop selected dashboard from sidebar."""
     try:
-        vim.command('echo "DEBUG: dashboard_sidebar_stop called"')
-
         # Get current line number
         line_num = vim.current.window.cursor[0]
-        vim.command(f'echo "DEBUG: Current line: {line_num}"')
 
         # Get config files from vim variable
         try:
@@ -680,24 +655,20 @@ def dashboard_sidebar_stop():
             if not isinstance(config_files, list):
                 config_files = []
         except Exception as e:
-            vim.command(f'echo "DEBUG: Error getting config_files: {str(e)}"')
             config_files = []
         try:
             config_dir = vim.eval('g:dashboard_config_dir')
             if not isinstance(config_dir, str):
                 config_dir = ''
         except Exception as e:
-            vim.command(f'echo "DEBUG: Error getting config_dir: {str(e)}"')
             config_dir = ''
 
         # Calculate selected index (skip header lines)
         selected_index = line_num - 7  # Files start from line 7
-        vim.command(f'echo "DEBUG: Selected index: {selected_index}"')
 
         if 0 <= selected_index < len(config_files):
             selected_file = config_files[selected_index]
             full_path = os.path.join(config_dir, selected_file)
-            vim.command(f'echo "DEBUG: Stopping: {selected_file}"')
 
             # Check if dashboard is running for this config
             core = get_dashboard_core()
