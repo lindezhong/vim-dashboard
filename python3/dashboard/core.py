@@ -719,7 +719,7 @@ def dashboard_sidebar_stop():
                     # First, try to close the buffer directly
                     vim.command(f'silent! bwipeout {temp_file_normalized}')
 
-                    # Also check if the file is open in the right window and close it
+                    # Also check if the file is open in the right window and replace it with empty buffer
                     vim.command('wincmd l')  # Switch to right window
                     try:
                         current_file = vim.current.buffer.name
@@ -730,8 +730,10 @@ def dashboard_sidebar_stop():
                                 current_file_normalized.lower() == temp_file_normalized.lower()) or \
                                (os.name != 'nt' and
                                 current_file_normalized == temp_file_normalized):
-                                # If the dashboard file is open in the right window, close it
-                                vim.command('close')
+                                # If the dashboard file is open in the right window, replace with empty buffer
+                                vim.command('enew')  # Create new empty buffer
+                                vim.command('setlocal buftype=nofile')
+                                vim.command('setlocal noswapfile')
                                 # Switch back to sidebar
                                 vim.command('wincmd h')
                             else:
