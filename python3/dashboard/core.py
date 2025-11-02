@@ -532,30 +532,14 @@ def dashboard_sidebar_select():
                 success = dashboard_start(full_path)
 
                 if success:
-                    # Find the opened dashboard file and switch to it
-                    core = get_dashboard_core()
-                    task = core.scheduler.get_task_by_config_file(full_path)
-                    if task:
-                        temp_file = task.get_temp_file_path()
-                        vim.command('echo "DEBUG: Switching to temp file: ' + temp_file + '"')
+                    # dashboard_start already opened the file, just need to update sidebar and switch focus
+                    vim.command('echo "DEBUG: Dashboard started successfully"')
 
-                        # Switch to right window and open the temp file
-                        vim.command('wincmd l')
-                        vim.command(f'silent edit {temp_file}')
-                        vim.command('setlocal filetype=dashboard')
-                        vim.command('setlocal autoread')
-                        vim.command('setlocal noswapfile')
-                        vim.command('setlocal buftype=nowrite')
-                        vim.command('setlocal readonly')
-                        vim.command('call dashboard#setup_dashboard_buffer()')
-
-                        # Update sidebar status (switch back to sidebar first)
-                        vim.command('wincmd h')
-                        dashboard_browser()
-                        # Switch back to dashboard file
-                        vim.command('wincmd l')
-                    else:
-                        vim.command('echohl ErrorMsg | echo "Failed to get dashboard task" | echohl None')
+                    # Update sidebar status (switch back to sidebar first)
+                    vim.command('wincmd h')
+                    dashboard_browser()
+                    # Switch back to dashboard file (dashboard_start already opened it)
+                    vim.command('wincmd l')
                 else:
                     vim.command('echohl ErrorMsg | echo "Failed to start dashboard" | echohl None')
         else:
