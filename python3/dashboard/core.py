@@ -167,6 +167,7 @@ class DashboardCore:
     def stop_dashboard(self, config_file: Optional[str] = None) -> bool:
         """Stop dashboard task."""
         try:
+            vim.command(f'echohl MoreMsg | echo "DEBUG: stop_dashboard called with config_file={config_file}" | echohl None')
             if config_file:
                 # Stop specific config file
                 config_file = os.path.abspath(config_file)
@@ -738,11 +739,18 @@ endif
 ''')
 
                 # Switch to the temp file buffer first, then use unified stop logic
+                vim.command(f'echohl MoreMsg | echo "DEBUG: Switching to right window and opening temp file" | echohl None')
                 vim.command('wincmd l')  # Switch to right window
                 vim.command(f'silent edit {temp_file}')  # Open the temp file
 
+                # Verify we're in the correct buffer
+                current_buffer_after_switch = vim.current.buffer.name
+                vim.command(f'echohl MoreMsg | echo "DEBUG: After switch, current buffer is: {current_buffer_after_switch}" | echohl None')
+
                 # Now use the unified stop logic (no config_file parameter)
+                vim.command(f'echohl MoreMsg | echo "DEBUG: Calling stop_dashboard() with no parameters" | echohl None')
                 core.stop_dashboard()  # This will use the current buffer logic
+                vim.command(f'echohl MoreMsg | echo "DEBUG: stop_dashboard() call completed" | echohl None')
 
                 # Check again if the temp file buffer still exists after stopping
                 vim.command(f'''
