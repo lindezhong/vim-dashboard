@@ -278,8 +278,11 @@ endfor
 
         except Exception as e:
             import traceback
-            error_msg = f"Error in stop_dashboard: {str(e)}\n{traceback.format_exc()}"
-            vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
+            # Safely format error message for vim echo
+            error_msg = f"Error in stop_dashboard: {str(e)}"
+            # Escape quotes and remove newlines for safe vim echo
+            safe_error_msg = error_msg.replace('"', '\\"').replace('\n', ' ').replace('\r', '')
+            vim.command(f'echohl ErrorMsg | echo "{safe_error_msg}" | echohl None')
             return False
 
     def _close_dashboard_file(self, temp_file: str):
