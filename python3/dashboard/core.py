@@ -359,6 +359,48 @@ for i in range(1, winnr("$") + 1)
 endfor
 ''')
 
+                            # Fix window inconsistency - close any extra empty windows
+                            vim.command('echohl MoreMsg | echo "DEBUG: Fixing window inconsistency..." | echohl None')
+                            vim.command('''
+let total_windows = winnr("$")
+if total_windows > 2
+  echohl MoreMsg | echo "DEBUG: Found " . total_windows . " windows, should only have 2. Cleaning up..." | echohl None
+  for i in range(3, total_windows)
+    if winbufnr(i) > 0
+      let bufname = bufname(winbufnr(i))
+      let ft = getwinvar(i, "&filetype")
+      if ft == "" || bufname == ""
+        echohl MoreMsg | echo "DEBUG: Closing empty window " . i | echohl None
+        execute i . "wincmd w"
+        close
+      endif
+    endif
+  endfor
+endif
+''')
+
+                            # Final focus enforcement after cleanup
+                            vim.command('echohl MoreMsg | echo "DEBUG: Final focus enforcement after cleanup..." | echohl None')
+                            vim.command('''
+for i in range(1, winnr("$") + 1)
+  let ft = getwinvar(i, "&filetype")
+  if ft == "dashboard"
+    echohl MoreMsg | echo "DEBUG: Switching to dashboard window " . i | echohl None
+    execute i . "wincmd w"
+    break
+  endif
+endfor
+''')
+
+                            # Force focus and make it obvious
+                            vim.command('echohl MoreMsg | echo "DEBUG: Making focus obvious..." | echohl None')
+                            vim.command('normal! gg')
+                            vim.command('normal! zz')  # Center the screen
+                            vim.command('set cursorline')
+                            vim.command('redraw!')
+
+                            vim.command('echohl MoreMsg | echo "DEBUG: Focus fix completed - Current window: " . winnr() . ", filetype: " . &filetype | echohl None')
+
                             vim.command('echohl MoreMsg | echo "Dashboard stopped, switched to remaining dashboard" | echohl None')
                         else:
                             # No remaining dashboards, close the current buffer
