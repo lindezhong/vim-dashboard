@@ -167,7 +167,7 @@ class DashboardCore:
     def stop_dashboard(self, config_file: Optional[str] = None) -> bool:
         """Stop dashboard task."""
         try:
-            vim.command(f'echohl MoreMsg | echo "DEBUG: stop_dashboard called with config_file={config_file}" | echohl None')
+
             if config_file:
                 # Stop specific config file
                 config_file = os.path.abspath(config_file)
@@ -229,12 +229,12 @@ class DashboardCore:
                             # Get current buffer info before closing
                             current_buffer_name = vim.current.buffer.name
                             current_buffer_number = vim.current.buffer.number
-                            vim.command(f'echohl MoreMsg | echo "DEBUG: Before switch - Current buffer: {current_buffer_name} (#{current_buffer_number})" | echohl None')
+
 
                             # Switch to the first remaining dashboard first
                             first_remaining_task = next(iter(remaining_tasks.values()))
                             remaining_temp_file = first_remaining_task['temp_file']
-                            vim.command(f'echohl MoreMsg | echo "DEBUG: Switching to remaining dashboard: {remaining_temp_file}" | echohl None')
+
 
                             # Switch to the remaining dashboard file first (this preserves window layout)
                             vim.command('set autoread')
@@ -247,30 +247,18 @@ class DashboardCore:
                             vim.command('call dashboard#setup_dashboard_buffer()')
 
                             # Now close the old buffer (window layout is preserved since we have a new buffer)
-                            vim.command('echohl MoreMsg | echo "DEBUG: Closing old buffer after switching" | echohl None')
                             vim.command(f'silent! bwipeout {current_buffer_number}')
 
-                            # Check if old buffer was closed
-                            vim.command(f'if bufexists({current_buffer_number}) | echo "DEBUG: Old buffer still exists after bwipeout!" | else | echo "DEBUG: Old buffer successfully closed" | endif')
+                            # Ensure focus stays on the dashboard window (right side)
+                            # If we're not in the dashboard window, switch to it
+                            vim.command('if &filetype != "dashboard" | wincmd l | endif')
 
                             vim.command('echohl MoreMsg | echo "Dashboard stopped, switched to remaining dashboard" | echohl None')
                         else:
                             # No remaining dashboards, close the current buffer
-                            vim.command('echohl MoreMsg | echo "DEBUG: No remaining dashboards, closing current buffer" | echohl None')
 
-                            # Get current buffer info for debugging
-                            current_buffer_name = vim.current.buffer.name
-                            current_buffer_number = vim.current.buffer.number
-                            vim.command(f'echohl MoreMsg | echo "DEBUG: Current buffer name: {current_buffer_name}" | echohl None')
-                            vim.command(f'echohl MoreMsg | echo "DEBUG: Current buffer number: {current_buffer_number}" | echohl None')
-
-                            # Try multiple methods to close the buffer
-                            vim.command('echohl MoreMsg | echo "DEBUG: Attempting bwipeout..." | echohl None')
+                            # Close the current buffer
                             vim.command('bwipeout')
-
-                            # Check if buffer still exists
-                            vim.command(f'echohl MoreMsg | echo "DEBUG: Buffer closed, checking if still exists..." | echohl None')
-                            vim.command(f'if bufexists({current_buffer_number}) | echo "DEBUG: Buffer still exists!" | else | echo "DEBUG: Buffer successfully closed" | endif')
 
                             vim.command('echohl MoreMsg | echo "Dashboard stopped" | echohl None')
 
@@ -739,41 +727,23 @@ def dashboard_sidebar_stop():
             if existing_task:
                 # Get temp file path before stopping
                 temp_file = existing_task.get_temp_file_path()
-                vim.command(f'echohl MoreMsg | echo "DEBUG: Stopping dashboard for temp file: {temp_file}" | echohl None')
+
 
                 # Check if the temp file is currently open in any buffer
-                vim.command(f'''
-let g:temp_file_buffer = bufnr("{temp_file}")
-if g:temp_file_buffer != -1
-    echohl MoreMsg | echo "DEBUG: Temp file is open in buffer " . g:temp_file_buffer | echohl None
-else
-    echohl MoreMsg | echo "DEBUG: Temp file is not currently open in any buffer" | echohl None
-endif
-''')
+
 
                 # Switch to the temp file buffer first, then use unified stop logic
-                vim.command(f'echohl MoreMsg | echo "DEBUG: Switching to right window and opening temp file" | echohl None')
+
                 vim.command('wincmd l')  # Switch to right window
                 vim.command(f'silent edit {temp_file}')  # Open the temp file
 
                 # Verify we're in the correct buffer
                 current_buffer_after_switch = vim.current.buffer.name
-                vim.command(f'echohl MoreMsg | echo "DEBUG: After switch, current buffer is: {current_buffer_after_switch}" | echohl None')
-
                 # Now use the unified stop logic (no config_file parameter)
-                vim.command(f'echohl MoreMsg | echo "DEBUG: Calling stop_dashboard() with no parameters" | echohl None')
                 core.stop_dashboard()  # This will use the current buffer logic
-                vim.command(f'echohl MoreMsg | echo "DEBUG: stop_dashboard() call completed" | echohl None')
 
                 # Check again if the temp file buffer still exists after stopping
-                vim.command(f'''
-let g:temp_file_buffer_after = bufnr("{temp_file}")
-if g:temp_file_buffer_after != -1
-    echohl MoreMsg | echo "DEBUG: After stop - temp file still in buffer " . g:temp_file_buffer_after | echohl None
-else
-    echohl MoreMsg | echo "DEBUG: After stop - temp file buffer successfully closed" | echohl None
-endif
-''')
+
 
 
 
