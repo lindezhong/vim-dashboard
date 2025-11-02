@@ -161,14 +161,52 @@ class LineChart(BaseChart):
                 x_pos = int((i / (len(normalized_values) - 1)) * (chart_width - 1))
                 x_positions.append(x_pos)
 
-        # Plot points
+        # Plot points with smart character placement
         for i, (x_pos, y_pos) in enumerate(zip(x_positions, normalized_values)):
             if 0 <= x_pos < chart_width and 0 <= y_pos < chart_height:
                 # Y coordinate is inverted (0 = top of grid, but we want 0 = bottom of chart)
                 grid_y = chart_height - 1 - y_pos
-                # Only plot if position is empty or use the new character
-                if grid[grid_y][x_pos] == ' ' or grid[grid_y][x_pos] == ASCIIChartHelper.CHART_CHARS['line']['line_h']:
+                current_char = grid[grid_y][x_pos]
+
+                # Smart character placement strategy
+                if current_char == ' ' or current_char == ASCIIChartHelper.CHART_CHARS['line']['line_h']:
+                    # Empty space or horizontal line - place the point
                     grid[grid_y][x_pos] = point_char
+                elif current_char in ['●', '◆', '▲', '■', '♦', '○', '◇', '△', '□', '◊']:
+                    # Another series point is already here - use combination character
+                    # Try to place the new point in adjacent positions
+                    placed = False
+
+                    # Try adjacent positions (priority: right, left, up, down)
+                    adjacent_positions = [
+                        (x_pos + 1, grid_y),     # Right
+                        (x_pos - 1, grid_y),     # Left
+                        (x_pos, grid_y - 1),     # Up
+                        (x_pos, grid_y + 1),     # Down
+                    ]
+
+                    for adj_x, adj_y in adjacent_positions:
+                        if (0 <= adj_x < chart_width and 0 <= adj_y < chart_height and
+                            (grid[adj_y][adj_x] == ' ' or grid[adj_y][adj_x] == ASCIIChartHelper.CHART_CHARS['line']['line_h'])):
+                            grid[adj_y][adj_x] = point_char
+                            placed = True
+                            break
+
+                    # If no adjacent position available, use a combination character
+                    if not placed:
+                        grid[grid_y][x_pos] = '※'  # Multi-series indicator
+                else:
+                    # Some other character - try to place in adjacent position
+                    adjacent_positions = [
+                        (x_pos + 1, grid_y), (x_pos - 1, grid_y),
+                        (x_pos, grid_y - 1), (x_pos, grid_y + 1)
+                    ]
+
+                    for adj_x, adj_y in adjacent_positions:
+                        if (0 <= adj_x < chart_width and 0 <= adj_y < chart_height and
+                            grid[adj_y][adj_x] == ' '):
+                            grid[adj_y][adj_x] = point_char
+                            break
         
         # Draw connecting lines
         line_char = self.style.get('line_char', ASCIIChartHelper.CHART_CHARS['line']['line_h'])
