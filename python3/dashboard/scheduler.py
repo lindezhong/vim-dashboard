@@ -28,6 +28,7 @@ class DashboardTask:
         self.last_error = None
         self.temp_file = None
         self.last_countdown_update = 0  # Track last countdown update time
+        self._creation_time = time.time()  # Track task creation time for countdown
 
         # Initialize components
         self.db_manager = DatabaseManager()
@@ -36,6 +37,11 @@ class DashboardTask:
     def should_run(self) -> bool:
         """Check if task should run based on interval."""
         current_time = time.time()
+
+        # If never run before, check against creation time
+        if self.last_run == 0:
+            return (current_time - self._creation_time) >= self.interval
+
         return (current_time - self.last_run) >= self.interval
     
     def get_remaining_time(self) -> int:
@@ -46,10 +52,12 @@ class DashboardTask:
         if self.is_running:
             return 0
 
-        # If never run before, calculate from creation time
+        # If never run before, calculate from task creation time
         if self.last_run == 0:
-            # Use current time as reference for countdown
-            elapsed = 0
+            # Initialize last_run to current time for countdown calculation
+            if not hasattr(self, '_creation_time'):
+                self._creation_time = current_time
+            elapsed = current_time - self._creation_time
         else:
             elapsed = current_time - self.last_run
 
