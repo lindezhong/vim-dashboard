@@ -223,23 +223,8 @@ class DashboardCore:
                         success = self.scheduler.remove_task(task_id)
                         if success:
 
-                            # Instead of closing the window, replace buffer content and make it empty
-                            # Check if we have multiple windows to avoid closing the last window
-                            vim.command('let g:dashboard_window_count = winnr("$")')
-                            window_count = int(vim.eval('g:dashboard_window_count'))
-
-                            if window_count > 1:
-                                # Safe to replace buffer content while preserving window layout
-                                vim.current.buffer[:] = ['Dashboard stopped. Use :Dashboard to start a new one.']
-                                vim.command('setlocal buftype=nofile')
-                                vim.command('setlocal noswapfile')
-                                vim.command('setlocal nomodified')
-                                vim.command('file [Dashboard Stopped]')  # Set buffer name
-                            else:
-                                # Only one window, just clear content but keep window
-                                vim.current.buffer[:] = ['Dashboard stopped. Window preserved.', '', 'Use :Dashboard to start a new dashboard.']
-                                vim.command('setlocal nomodified')
-
+                            # Close the dashboard buffer
+                            vim.command('bwipeout')
                             vim.command('echohl MoreMsg | echo "Dashboard stopped" | echohl None')
                             return True
                         break
