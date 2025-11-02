@@ -255,8 +255,10 @@ class DashboardCore:
                             vim.command(f'silent! bwipeout {current_buffer_number}')
 
                             # Ensure focus stays on the dashboard window (right side)
-                            # If we're not in the dashboard window, switch to it
-                            vim.command('if &filetype != "dashboard" | wincmd l | endif')
+                            # Force switch to the dashboard window
+                            vim.command('wincmd l')  # Move to right window
+                            # Double check we're in the right place
+                            vim.command('if &filetype != "dashboard" | wincmd w | endif')
 
                             vim.command('echohl MoreMsg | echo "Dashboard stopped, switched to remaining dashboard" | echohl None')
                         else:
