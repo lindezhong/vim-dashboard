@@ -334,11 +334,27 @@ function! dashboard#modify_variable()
     " First get available variables
     execute 'python3 << EOF'
 import dashboard.core
+import json
+
+def python_to_vim_value(obj):
+    """Convert Python objects to VimScript-compatible format"""
+    if isinstance(obj, bool):
+        return 1 if obj else 0
+    elif isinstance(obj, (list, tuple)):
+        return [python_to_vim_value(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {k: python_to_vim_value(v) for k, v in obj.items()}
+    else:
+        return obj
+
 variables_info = dashboard.core.dashboard_get_variables_info()
 if variables_info:
     var_names = list(variables_info.keys())
-    vim.command('let l:var_names = ' + str(var_names))
-    vim.command('let l:variables_info = ' + str(variables_info))
+    # Convert to VimScript-compatible format
+    vim_var_names = json.dumps(var_names)
+    vim_variables_info = json.dumps(python_to_vim_value(variables_info))
+    vim.command('let l:var_names = ' + vim_var_names)
+    vim.command('let l:variables_info = ' + vim_variables_info)
 else:
     vim.command('let l:var_names = []')
     vim.command('let l:variables_info = {}')
