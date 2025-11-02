@@ -240,7 +240,7 @@ class DashboardCore:
 
         except Exception as e:
             import traceback
-            error_msg = f"Error in stop_dashboard: {str(e)}\\n{traceback.format_exc()}"
+            error_msg = f"Error in stop_dashboard: {str(e)}\n{traceback.format_exc()}"
             vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
             return False
 
