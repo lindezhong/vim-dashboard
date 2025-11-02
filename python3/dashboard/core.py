@@ -322,6 +322,43 @@ endfor
 
                             vim.command('echohl MoreMsg | echo "DEBUG: Strong visual confirmation completed" | echohl None')
 
+                            # Final comprehensive debugging
+                            vim.command('echohl MoreMsg | echo "DEBUG: === FINAL STATE ANALYSIS ===" | echohl None')
+                            vim.command('echohl MoreMsg | echo "DEBUG: Current window number: " . winnr() | echohl None')
+                            vim.command('echohl MoreMsg | echo "DEBUG: Total windows: " . winnr("$") | echohl None')
+                            vim.command('echohl MoreMsg | echo "DEBUG: Current buffer name: " . bufname("%") | echohl None')
+                            vim.command('echohl MoreMsg | echo "DEBUG: Current filetype: " . &filetype | echohl None')
+                            vim.command('echohl MoreMsg | echo "DEBUG: Current line number: " . line(".") | echohl None')
+                            vim.command('echohl MoreMsg | echo "DEBUG: Current column: " . col(".") | echohl None')
+                            vim.command('echohl MoreMsg | echo "DEBUG: Buffer modified: " . &modified | echohl None')
+                            vim.command('echohl MoreMsg | echo "DEBUG: Buffer readonly: " . &readonly | echohl None')
+                            vim.command('echohl MoreMsg | echo "DEBUG: Window width: " . winwidth(0) | echohl None')
+                            vim.command('echohl MoreMsg | echo "DEBUG: Window height: " . winheight(0) | echohl None')
+
+                            # Check if we can actually input in this window
+                            vim.command('echohl MoreMsg | echo "DEBUG: Testing input capability..." | echohl None')
+                            vim.command('let g:dashboard_test_mode = mode()')
+                            vim.command('echohl MoreMsg | echo "DEBUG: Current mode: " . g:dashboard_test_mode | echohl None')
+
+                            # Test if we can move cursor
+                            vim.command('let g:dashboard_old_line = line(".")')
+                            vim.command('normal! j')
+                            vim.command('let g:dashboard_new_line = line(".")')
+                            vim.command('echohl MoreMsg | echo "DEBUG: Cursor movement test - Old line: " . g:dashboard_old_line . ", New line: " . g:dashboard_new_line | echohl None')
+                            vim.command('normal! k')  # Move back
+
+                            # Check all windows and their properties
+                            vim.command('echohl MoreMsg | echo "DEBUG: === ALL WINDOWS ANALYSIS ===" | echohl None')
+                            vim.command('''
+for i in range(1, winnr("$") + 1)
+  let bufname = bufname(winbufnr(i))
+  let ft = getwinvar(i, "&filetype")
+  let modified = getwinvar(i, "&modified")
+  let readonly = getwinvar(i, "&readonly")
+  echohl MoreMsg | echo "DEBUG: Window " . i . ": " . bufname . " (ft=" . ft . ", mod=" . modified . ", ro=" . readonly . ")" | echohl None
+endfor
+''')
+
                             vim.command('echohl MoreMsg | echo "Dashboard stopped, switched to remaining dashboard" | echohl None')
                         else:
                             # No remaining dashboards, close the current buffer
