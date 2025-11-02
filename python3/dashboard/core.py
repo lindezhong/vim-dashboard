@@ -378,9 +378,11 @@ endfor
                 vim.command('topleft 30vnew')
                 vim.command('setlocal filetype=dashboard-sidebar')
 
-            # Set buffer options for sidebar
+            # Set buffer options for sidebar (NERDTree style)
             vim.command('setlocal buftype=nofile')
+            vim.command('setlocal bufhidden=hide')  # 隐藏时不卸载
             vim.command('setlocal noswapfile')
+            vim.command('setlocal nobuflisted')  # ⭐ 关键！不加入 buffer 列表
             vim.command('setlocal cursorline')
             vim.command('setlocal nonumber')
             vim.command('setlocal norelativenumber')
