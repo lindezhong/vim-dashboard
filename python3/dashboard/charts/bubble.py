@@ -20,11 +20,12 @@ class BubbleChart(BaseChart):
             if not self.data:
                 return self._handle_empty_data()
             
-            # Extract configuration
-            x_column = self.config.get('x_column', 'x')
-            y_column = self.config.get('y_column', 'y')
-            size_column = self.config.get('size_column', 'size')
-            label_column = self.config.get('label_column')
+            # Extract configuration from show section
+            show_config = self.config.get('show', {})
+            x_column = show_config.get('x_column', self.config.get('x_column', 'x'))
+            y_column = show_config.get('y_column', self.config.get('y_column', 'y'))
+            size_column = show_config.get('size_column', self.config.get('size_column', 'size'))
+            label_column = show_config.get('label_column', self.config.get('label_column'))
             
             width = self._get_width() - 10  # Leave space for labels
             height = self._get_height()

@@ -21,9 +21,10 @@ class BoxplotChart(BaseChart):
             if not self.data:
                 return self._handle_empty_data()
             
-            # Extract configuration
-            category_column = self.config.get('category_column', 'category')
-            value_column = self.config.get('value_column', 'value')
+            # Extract configuration from show section
+            show_config = self.config.get('show', {})
+            category_column = show_config.get('category_column', self.config.get('category_column', 'category'))
+            value_column = show_config.get('value_column', self.config.get('value_column', 'value'))
             
             width = self._get_width() - 10  # Leave space for labels
             height = self._get_height()

@@ -21,9 +21,10 @@ class HistogramChart(BaseChart):
             if not self.data:
                 return self._handle_empty_data()
             
-            # Extract configuration
-            value_column = self.config.get('value_column', 'value')
-            bins = self.config.get('bins', 10)  # Number of bins
+            # Extract configuration from show section
+            show_config = self.config.get('show', {})
+            value_column = show_config.get('value_column', self.config.get('value_column', 'value'))
+            bins = show_config.get('bins', self.config.get('bins', 10))  # Number of bins
             
             width = self._get_width() - 10  # Leave space for labels
             height = self._get_height()
