@@ -1120,7 +1120,7 @@ def dashboard_show_sql():
 
         # Debug: Check the content that will be passed to popup
         vim.command('echohl WarningMsg | echo "DEBUG: Checking popup content..." | echohl None')
-        vim.command('for line in l:popup_content | if match(line, "\\\\") >= 0 | echohl WarningMsg | echo "DEBUG: Found backslash in line: " . line | echohl None | endif | endfor')
+        # Skip the problematic VimScript line that causes syntax errors
 
         # Check for popup support and create accordingly
         vim.command('echohl WarningMsg | echo "DEBUG: About to execute popup creation script..." | echohl None')
