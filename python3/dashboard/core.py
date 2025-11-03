@@ -1066,12 +1066,15 @@ def dashboard_show_sql():
         popup_height = max(max_height, 10)
 
         # Create popup using Vim's popup functionality
-        # First, pass the content to Vim
-        import json
-        content_json = json.dumps(lines).replace('"', '\\"')
+        # Use a safer method to pass content to Vim
+        # Set each line individually to avoid escaping issues
+        vim.command('let l:popup_content = []')
+        for line in lines:
+            # Escape single quotes and backslashes for VimScript
+            escaped_line = line.replace('\\', '\\\\').replace("'", "''")
+            vim.command(f"call add(l:popup_content, '{escaped_line}')")
 
-        vim.command(f'''
-        let l:popup_content = {content_json}
+        vim.command('''
         let l:popup_opts = {{
             \\ 'title': ' SQL Query ',
             \\ 'wrap': 1,
