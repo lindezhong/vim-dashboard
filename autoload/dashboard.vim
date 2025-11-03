@@ -796,3 +796,30 @@ function! dashboard#auto_start_from_dashboard_file()
   " Start the dashboard with the found config file
   call dashboard#start(l:config_file)
 endfunction
+
+" Handle session restore - check all buffers for .dashboard files
+function! dashboard#handle_session_dashboard_files()
+  " Wait a moment for session to fully load
+  call timer_start(500, function('dashboard#delayed_session_dashboard_check'))
+endfunction
+
+" Delayed check for .dashboard files after session load
+function! dashboard#delayed_session_dashboard_check(timer_id)
+  " Check all loaded buffers for .dashboard files
+  for l:bufnr in range(1, bufnr('$'))
+    if bufexists(l:bufnr)
+      let l:bufname = bufname(l:bufnr)
+      " Check if this is a .dashboard file
+      if l:bufname =~# '\.dashboard$'
+        " Switch to this buffer temporarily to trigger auto-start
+        let l:current_buf = bufnr('%')
+        execute 'buffer ' . l:bufnr
+        call dashboard#auto_start_from_dashboard_file()
+        " Switch back to original buffer if it still exists
+        if bufexists(l:current_buf)
+          execute 'buffer ' . l:current_buf
+        endif
+      endif
+    endif
+  endfor
+endfunction
