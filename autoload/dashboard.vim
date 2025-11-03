@@ -382,7 +382,13 @@ EOF
       let l:var_type = get(l:var_info, 'type', 'string')
       let l:description = get(l:var_info, 'description', '')
 
-      let l:display_line = printf('%d. %s (%s) = %s', l:index, l:var_name, l:var_type, l:current_value)
+      let l:current_value_str = l:current_value
+      " Convert complex types to string representation for display
+      if l:var_type == 'list' || l:var_type == 'map'
+        let l:current_value_str = string(l:current_value)
+      endif
+
+      let l:display_line = printf('%d. %s (%s) = %s', l:index, l:var_name, l:var_type, l:current_value_str)
       if !empty(l:description)
         let l:display_line .= ' - ' . l:description
       endif
@@ -409,7 +415,13 @@ EOF
     let l:var_type = get(l:var_info, 'type', 'string')
 
     " Prompt for new value
-    echo "\nCurrent value: " . l:current_value
+    " Convert current value to string for display
+    let l:current_value_display = l:current_value
+    if l:var_type == 'list' || l:var_type == 'map'
+      let l:current_value_display = string(l:current_value)
+    endif
+
+    echo "\nCurrent value: " . l:current_value_display
     echo "Variable type: " . l:var_type
 
     if l:var_type == 'boolean'
