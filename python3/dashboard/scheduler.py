@@ -37,6 +37,10 @@ class DashboardTask:
         self.runtime_variables = {}  # Runtime variable overrides
         self.variables_info = {}  # Variables metadata for display
 
+        # SQL and execution tracking
+        self.last_rendered_sql = None  # Store the last rendered SQL
+        self.last_execution_time = None  # Store the last execution timestamp
+
         # Initialize components
         self.db_manager = DatabaseManager()
         self.config_manager = ConfigManager()
@@ -99,6 +103,18 @@ class DashboardTask:
         self.runtime_variables.clear()
         for var_name, var_info in self.variables_info.items():
             var_info['current_value'] = var_info['default_value']
+
+    def get_rendered_sql(self) -> Optional[str]:
+        """Get the last rendered SQL query."""
+        return self.last_rendered_sql
+
+    def get_last_execution_time(self) -> Optional[str]:
+        """Get the last execution time as formatted string."""
+        if self.last_execution_time:
+            import datetime
+            dt = datetime.datetime.fromtimestamp(self.last_execution_time)
+            return dt.strftime("%Y-%m-%d %H:%M:%S")
+        return None
 
     def should_run(self) -> bool:
         """Check if task should run based on interval."""
@@ -251,6 +267,10 @@ class DashboardTask:
             query = self.config_manager.get_query()
             if not query:
                 raise ValueError("SQL query not found in configuration")
+
+            # Store the rendered SQL for later retrieval
+            self.last_rendered_sql = query
+            self.last_execution_time = time.time()
 
             data = connection.execute_query(query)
 

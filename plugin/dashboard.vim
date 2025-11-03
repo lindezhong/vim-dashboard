@@ -31,6 +31,8 @@ command! -nargs=0 DashboardShowVariables call dashboard#show_variables()
 command! -nargs=0 DashboardModifyVariable call dashboard#modify_variable()
 command! -nargs=* DashboardUpdateVariable call dashboard#update_variable(<f-args>)
 command! -nargs=0 DashboardResetVariables call dashboard#reset_variables()
+" SQL viewing command
+command! -nargs=0 DashboardShowSQL call dashboard#show_sql()
 
 " Auto commands
 augroup DashboardPlugin

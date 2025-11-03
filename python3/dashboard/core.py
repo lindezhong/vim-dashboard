@@ -1002,3 +1002,76 @@ def dashboard_reset_variables():
     except Exception as e:
         error_msg = format_error_message(e, "Reset Variables")
         vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
+
+def dashboard_show_sql():
+    """Show the rendered SQL for current dashboard."""
+    try:
+        # Get current buffer file path
+        current_file = vim.current.buffer.name
+        if not current_file:
+            vim.command('echohl ErrorMsg | echo "No active dashboard buffer" | echohl None')
+            return
+
+        # Find the task associated with this temp file
+        core = get_dashboard_core()
+        tasks = core.scheduler.list_tasks()
+
+        current_task = None
+        for task_id, task_info in tasks.items():
+            if task_info.get('temp_file') == current_file:
+                current_task = core.scheduler.get_task(task_id)
+                break
+
+        if not current_task:
+            vim.command('echohl ErrorMsg | echo "Current buffer is not a dashboard" | echohl None')
+            return
+
+        # Get the rendered SQL
+        rendered_sql = current_task.get_rendered_sql()
+
+        if not rendered_sql:
+            vim.command('echohl WarningMsg | echo "No SQL found for current dashboard" | echohl None')
+            return
+
+        # Display SQL in a new buffer
+        vim.command('new')
+        vim.command('setlocal buftype=nofile')
+        vim.command('setlocal noswapfile')
+        vim.command('setlocal readonly')
+        vim.command('setlocal filetype=sql')
+
+        # Split SQL into lines for better display
+        sql_lines = rendered_sql.split('\n')
+
+        # Add header
+        lines = [
+            "-- Dashboard Rendered SQL",
+            f"-- Config: {os.path.basename(current_task.config_file)}",
+            f"-- Generated at: {current_task.get_last_execution_time() or 'N/A'}",
+            "",
+            "-- Variables used:",
+        ]
+
+        # Add variables info
+        variables_info = current_task.get_variables_info()
+        if variables_info:
+            for var_name, var_info in variables_info.items():
+                current_value = var_info.get('current_value', var_info.get('default_value', ''))
+                lines.append(f"-- {var_name}: {current_value}")
+        else:
+            lines.append("-- No variables defined")
+
+        lines.extend(["", "-- Rendered SQL:"])
+        lines.extend(sql_lines)
+
+        vim.current.buffer[:] = lines
+
+        # Set up key mappings for SQL buffer
+        vim.command('nnoremap <buffer> q :quit<CR>')
+        vim.command('nnoremap <buffer> <silent> r :python3 import dashboard.core; dashboard.core.dashboard_show_sql()<CR>')
+
+        vim.command('echohl MoreMsg | echo "SQL displayed. Press q to close, r to refresh" | echohl None')
+
+    except Exception as e:
+        error_msg = format_error_message(e, "Show SQL")
+        vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')

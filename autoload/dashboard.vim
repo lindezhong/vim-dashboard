@@ -504,6 +504,7 @@ function! dashboard#setup_dashboard_buffer()
     nnoremap <buffer> <silent> V :call dashboard#show_variables()<CR>
     nnoremap <buffer> <silent> r :call dashboard#restart()<CR>
     nnoremap <buffer> <silent> R :call dashboard#reset_variables()<CR>
+    nnoremap <buffer> <silent> s :call dashboard#show_sql()<CR>
 
     " Set up buffer-local auto commands for file change detection
     augroup DashboardBuffer
@@ -520,7 +521,7 @@ function! dashboard#setup_dashboard_buffer()
     call dashboard#start_refresh_timer()
 
     " Show help message
-    echo "Dashboard buffer keys: v=modify variable, V=show variables, r=refresh, R=reset variables"
+    echo "Dashboard buffer keys: v=modify variable, V=show variables, r=refresh, R=reset variables, s=show SQL"
 
   endif
 endfunction
@@ -589,4 +590,20 @@ function! dashboard#check_file_changes()
 
 
   endif
+endfunction" Show rendered SQL for current dashboard
+function! dashboard#show_sql()
+  if !s:init_python()
+    return
+  endif
+
+  try
+    execute 'python3 << EOF'
+import dashboard.core
+dashboard.core.dashboard_show_sql()
+EOF
+  catch
+    echohl ErrorMsg
+    echom 'Error showing SQL: ' . v:exception
+    echohl None
+  endtry
 endfunction
