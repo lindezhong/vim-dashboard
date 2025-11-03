@@ -372,7 +372,7 @@ endfor
         """Refresh sidebar if it exists to update status."""
         try:
             # Check if sidebar exists
-            vim.command('''
+            vim.command(r'''
 let g:dashboard_sidebar_exists = 0
 for i in range(1, winnr("$"))
   if getwinvar(i, "&filetype") == "dashboard-sidebar"
@@ -464,7 +464,7 @@ show:
                 return True
 
             # Check if sidebar already exists
-            vim.command('''
+            vim.command(r'''
 let g:dashboard_sidebar_exists = 0
 for i in range(1, winnr("$"))
   if getwinvar(i, "&filetype") == "dashboard-sidebar"
