@@ -811,11 +811,55 @@ function! dashboard#delayed_session_dashboard_check(timer_id)
       let l:bufname = bufname(l:bufnr)
       " Check if this is a .dashboard file
       if l:bufname =~# '\.dashboard$'
-        " Check if this dashboard is already running by checking if it's already set up
+        " Enhanced check: verify if dashboard is actually running and functional
         let l:is_already_setup = getbufvar(l:bufnr, 'is_dashboard_buffer', 0)
+        let l:should_start = 1
 
-        " Only auto-start if not already set up (to avoid duplicate starts)
-        if !l:is_already_setup
+        if l:is_already_setup
+          " Additional verification: check if the dashboard task is actually running
+          try
+            let l:current_buf = bufnr('%')
+            execute 'buffer ' . l:bufnr
+
+            " Try to verify dashboard is functional by checking Python core
+            if s:init_python()
+              execute 'python3 << EOF'
+try:
+    import dashboard.core
+    core = dashboard.core.get_dashboard_core()
+    current_file = vim.current.buffer.name
+    tasks = core.scheduler.list_tasks()
+    is_functional = False
+    for task_id, task_info in tasks.items():
+        if task_info.get('temp_file') == current_file:
+            is_functional = True
+            break
+    vim.command('let l:is_functional = ' + ('1' if is_functional else '0'))
+except Exception as e:
+    # If any error occurs, assume not functional
+    vim.command('let l:is_functional = 0')
+EOF
+              " If dashboard is functional, don't restart
+              if l:is_functional
+                let l:should_start = 0
+              endif
+            endif
+
+            " Switch back to original buffer
+            if bufexists(l:current_buf)
+              execute 'buffer ' . l:current_buf
+            endif
+          catch
+            " If error occurs during verification, allow restart
+            let l:should_start = 1
+          endtry
+        endif
+
+        " Start dashboard if needed
+        if l:should_start
+          " Clear any stale buffer variables first
+          call setbufvar(l:bufnr, 'is_dashboard_buffer', 0)
+
           " Switch to this buffer temporarily to trigger auto-start
           let l:current_buf = bufnr('%')
           execute 'buffer ' . l:bufnr
