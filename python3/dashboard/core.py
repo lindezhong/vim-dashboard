@@ -1160,7 +1160,7 @@ local function copy_content()
     for i = 10, #lines do
         table.insert(sql_lines, lines[i])
     end
-    local content = table.concat(sql_lines, "\\n")
+    local content = table.concat(sql_lines, "\\\\n")
     vim.fn.setreg('+', content)
     vim.fn.setreg('*', content)
     print("SQL content copied to clipboard!")
@@ -1210,14 +1210,14 @@ let l:popup_opts = {{
 let g:dashboard_sql_popup_id = popup_create(l:temp_buf, l:popup_opts)
 
 function! DashboardSQLPopupFilter(winid, key)
-    if a:key == 'q' || a:key == "\\<Esc>"
+    if a:key == 'q' || a:key == "\\\\<Esc>"
         call popup_close(a:winid)
         return 1
     elseif a:key == 'y'
         " Copy SQL content to clipboard (skip header lines)
         let l:bufnr = winbufnr(a:winid)
         let l:lines = getbufline(l:bufnr, 10, '$')  " Skip first 9 lines
-        let l:text = join(l:lines, "\\n")
+        let l:text = join(l:lines, "\\\\n")
         let @+ = l:text
         let @* = l:text
         echo "SQL content copied to clipboard!"
@@ -1242,7 +1242,7 @@ nnoremap <buffer> y :call DashboardCopySQLContent()<CR>
 
 function! DashboardCopySQLContent()
     let l:lines = getline(10, '$')  " Skip first 9 lines
-    let l:text = join(l:lines, "\\n")
+    let l:text = join(l:lines, "\\\\n")
     let @+ = l:text
     let @* = l:text
     echo "SQL content copied to clipboard!"
