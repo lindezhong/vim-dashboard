@@ -242,10 +242,7 @@ class AreaChart(BaseChart):
             # Build output
             chart_lines = []
 
-            # Title
-            title = show_config.get('title', 'Area Chart')
-            chart_lines.append(f"  {title}")
-            chart_lines.append("")
+            # Note: Title is now handled by base class panel, not displayed in chart content
 
             # Legend
             legend_config = show_config.get('legend', {})
