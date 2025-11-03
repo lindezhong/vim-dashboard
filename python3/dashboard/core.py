@@ -1089,215 +1089,167 @@ def dashboard_show_sql():
 
         vim.command(f'echohl WarningMsg | echo "DEBUG: Popup dimensions: {popup_width}x{popup_height}" | echohl None')
 
-        # Create popup using Vim's popup functionality
-        # Pass content directly to avoid any formatting issues with buffer operations
-        vim.command('echohl WarningMsg | echo "DEBUG: Converting Python list to VimScript format..." | echohl None')
+        # Create popup using coc.nvim-style implementation
+        # Simple, reliable approach without complex scrolling logic
 
-        # Convert Python list to VimScript list format, preserving line breaks
-        vim_list_items = []
+        # Prepare content for display
+        content_lines = []
         for line in lines:
-            # Escape single quotes and backslashes for VimScript
-            escaped_line = line.replace("'", "''").replace("\\", "\\\\")
-            vim_list_items.append(f"'{escaped_line}'")
+            content_lines.append(line.replace("'", "''"))  # Escape single quotes for VimScript
 
-        vim_list_str = '[' + ','.join(vim_list_items) + ']'
-        vim.command(f'let l:popup_content = {vim_list_str}')
-        vim.command('echohl WarningMsg | echo "DEBUG: Popup content prepared directly from Python" | echohl None')
+        # Create a temporary buffer with the content
+        vim.command('let l:temp_buf = bufnr("__dashboard_sql__", 1)')
+        vim.command('call bufload(l:temp_buf)')
 
-        # Check for popup support and create accordingly
-        vim.command('echohl WarningMsg | echo "DEBUG: About to execute popup creation script..." | echohl None')
+        # Set buffer content
+        for i, line in enumerate(content_lines):
+            vim.command(f"call setbufline(l:temp_buf, {i+1}, '{line}')")
 
-        # Split the VimScript into smaller parts to isolate the problem
-        try:
-            vim.command('echohl WarningMsg | echo "DEBUG: Step 1 - Check popup support" | echohl None')
-            vim.command('if exists("*popup_create") | let g:debug_popup_type = "vim" | elseif exists("*nvim_open_win") | let g:debug_popup_type = "nvim" | else | let g:debug_popup_type = "fallback" | endif')
+        # Set buffer options
+        vim.command('call setbufvar(l:temp_buf, "&filetype", "sql")')
+        vim.command('call setbufvar(l:temp_buf, "&buftype", "nofile")')
+        vim.command('call setbufvar(l:temp_buf, "&bufhidden", "wipe")')
+        vim.command('call setbufvar(l:temp_buf, "&swapfile", 0)')
+        vim.command('call setbufvar(l:temp_buf, "&modifiable", 0)')
 
-            popup_type = vim.eval('g:debug_popup_type')
-            vim.command(f'echohl WarningMsg | echo "DEBUG: Popup type: {popup_type}" | echohl None')
+        # Calculate dimensions
+        max_width = min(max(len(line) for line in lines) + 4, 120)
+        width = max(max_width, 60)
+        height = min(len(lines) + 2, 25)
 
-            if popup_type == "vim":
-                vim.command('echohl WarningMsg | echo "DEBUG: Creating Vim popup..." | echohl None')
+        # Check editor type and create appropriate popup
+        if vim.eval('has("nvim")') == '1':
+            # Neovim floating window
+            vim.command(f'''
+lua << EOF
+local buf = vim.fn.bufnr("__dashboard_sql__")
+local width = {width}
+local height = {height}
+local row = math.floor((vim.o.lines - height) / 2)
+local col = math.floor((vim.o.columns - width) / 2)
 
-                # Use individual commands to avoid complex string escaping
-                vim.command('let l:popup_opts = {}')
-                vim.command("let l:popup_opts['title'] = ' SQL Query '")
-                vim.command("let l:popup_opts['wrap'] = 1")
-                vim.command("let l:popup_opts['scrollbar'] = 1")
-                vim.command("let l:popup_opts['resize'] = 1")
-                vim.command("let l:popup_opts['close'] = 'button'")
-                vim.command("let l:popup_opts['border'] = []")
-                vim.command("let l:popup_opts['borderchars'] = ['─', '│', '─', '│', '┌', '┐', '┘', '└']")
-                vim.command("let l:popup_opts['minwidth'] = 60")
-                vim.command("let l:popup_opts['maxwidth'] = 120")
-                vim.command("let l:popup_opts['minheight'] = 10")
-                vim.command("let l:popup_opts['maxheight'] = 30")
-                vim.command("let l:popup_opts['pos'] = 'center'")
-                vim.command("let l:popup_opts['mapping'] = 0")
+local opts = {{
+    relative = 'editor',
+    width = width,
+    height = height,
+    row = row,
+    col = col,
+    style = 'minimal',
+    border = 'rounded',
+    title = ' SQL Query ',
+    title_pos = 'center'
+}}
 
-                vim.command('echohl WarningMsg | echo "DEBUG: Popup options created" | echohl None')
+local win = vim.api.nvim_open_win(buf, true, opts)
 
-                vim.command('let g:dashboard_sql_popup_id = popup_create(l:popup_content, l:popup_opts)')
-                vim.command('echohl WarningMsg | echo "DEBUG: Popup created successfully" | echohl None')
+-- Set window options
+vim.api.nvim_win_set_option(win, 'wrap', false)
+vim.api.nvim_win_set_option(win, 'cursorline', true)
 
-                vim.command('call popup_setoptions(g:dashboard_sql_popup_id, {"filetype": "sql"})')
-                vim.command('echohl WarningMsg | echo "DEBUG: Popup filetype set" | echohl None')
+-- Set up key mappings
+local function close_popup()
+    if vim.api.nvim_win_is_valid(win) then
+        vim.api.nvim_win_close(win, true)
+    end
+end
 
-                # Add key mappings for Vim popup
-                vim.command('call popup_setoptions(g:dashboard_sql_popup_id, {"filter": "DashboardSQLPopupFilter"})')
+local function copy_content()
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    -- Skip header lines (first 9 lines contain metadata)
+    local sql_lines = {{}}
+    for i = 10, #lines do
+        table.insert(sql_lines, lines[i])
+    end
+    local content = table.concat(sql_lines, "\\n")
+    vim.fn.setreg('+', content)
+    vim.fn.setreg('*', content)
+    print("SQL content copied to clipboard!")
+end
 
-                # Define the popup filter function for key handling
-                vim.command(r'''
+-- Key mappings
+vim.api.nvim_buf_set_keymap(buf, 'n', 'q', '', {{
+    callback = close_popup,
+    noremap = true,
+    silent = true
+}})
+vim.api.nvim_buf_set_keymap(buf, 'n', '<Esc>', '', {{
+    callback = close_popup,
+    noremap = true,
+    silent = true
+}})
+vim.api.nvim_buf_set_keymap(buf, 'n', 'y', '', {{
+    callback = copy_content,
+    noremap = true,
+    silent = true
+}})
+
+-- Store window ID for cleanup
+vim.g.dashboard_sql_popup_win = win
+EOF
+            ''')
+        elif vim.eval('exists("*popup_create")') == '1':
+            # Vim popup
+            vim.command(f'''
+let l:popup_opts = {{
+    \\ 'title': ' SQL Query ',
+    \\ 'wrap': 0,
+    \\ 'scrollbar': 1,
+    \\ 'resize': 0,
+    \\ 'close': 'button',
+    \\ 'border': [],
+    \\ 'borderchars': ['─', '│', '─', '│', '┌', '┐', '┘', '└'],
+    \\ 'minwidth': {width},
+    \\ 'maxwidth': {width},
+    \\ 'minheight': {height},
+    \\ 'maxheight': {height},
+    \\ 'pos': 'center',
+    \\ 'mapping': 0,
+    \\ 'filter': 'DashboardSQLPopupFilter'
+\\ }}
+
+let g:dashboard_sql_popup_id = popup_create(l:temp_buf, l:popup_opts)
+
 function! DashboardSQLPopupFilter(winid, key)
-    if a:key == 'q' || a:key == "\<Esc>"
+    if a:key == 'q' || a:key == "\\<Esc>"
         call popup_close(a:winid)
         return 1
-    elseif a:key == 'y' || a:key == "\<C-c>"
-        " Copy SQL content to clipboard (excluding operation keys)
+    elseif a:key == 'y'
+        " Copy SQL content to clipboard (skip header lines)
         let l:bufnr = winbufnr(a:winid)
-        let l:lines = getbufline(l:bufnr, 1, '$')
-        " Skip the first 4 lines (operation keys section)
-        let l:sql_lines = l:lines[4:]
-        let l:text = join(l:sql_lines, "\n")
+        let l:lines = getbufline(l:bufnr, 10, '$')  " Skip first 9 lines
+        let l:text = join(l:lines, "\\n")
         let @+ = l:text
         let @* = l:text
         echo "SQL content copied to clipboard!"
         return 1
-    elseif a:key == "\<S-Down>"
-        " Scroll down (page down) - force preserve window attributes
-        let l:opts_before = popup_getoptions(a:winid)
-        echom "DEBUG: Before S-Down - pos:" . get(l:opts_before, 'pos', 'center') . " firstline:" . get(l:opts_before, 'firstline', 1) . " minwidth:" . get(l:opts_before, 'minwidth', 'auto') . " minheight:" . get(l:opts_before, 'minheight', 'auto')
-        let l:current_first = get(l:opts_before, 'firstline', 1)
-        echom "DEBUG: S-Down scroll from line " . l:current_first . " to " . (l:current_first + 10)
-        " Use win_execute to execute scroll commands in the popup window context
-        call win_execute(a:winid, 'normal! 10' . "\<C-E>")
-        " Force restore original window attributes after scrolling
-        let l:restore_opts = {
-        \   'pos': get(l:opts_before, 'pos', 'center'),
-        \   'line': get(l:opts_before, 'line', 'cursor'),
-        \   'col': get(l:opts_before, 'col', 'cursor'),
-        \   'minwidth': get(l:opts_before, 'minwidth', 60),
-        \   'minheight': get(l:opts_before, 'minheight', 10),
-        \   'maxwidth': get(l:opts_before, 'maxwidth', 60),
-        \   'maxheight': get(l:opts_before, 'maxheight', 10)
-        \}
-        call popup_setoptions(a:winid, l:restore_opts)
-        let l:opts_after = popup_getoptions(a:winid)
-        echom "DEBUG: After S-Down - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
-        return 1
-    elseif a:key == "\<S-Up>"
-        " Scroll up (page up) - force preserve window attributes
-        let l:opts_before = popup_getoptions(a:winid)
-        echom "DEBUG: Before S-Up - pos:" . get(l:opts_before, 'pos', 'center') . " firstline:" . get(l:opts_before, 'firstline', 1) . " minwidth:" . get(l:opts_before, 'minwidth', 'auto') . " minheight:" . get(l:opts_before, 'minheight', 'auto')
-        let l:current_first = get(l:opts_before, 'firstline', 1)
-        let l:new_first = max([1, l:current_first - 10])
-        echom "DEBUG: S-Up scroll from line " . l:current_first . " to " . l:new_first
-        " Use win_execute to execute scroll commands in the popup window context
-        call win_execute(a:winid, 'normal! 10' . "\<C-Y>")
-        " Force restore original window attributes after scrolling
-        let l:restore_opts = {
-        \   'pos': get(l:opts_before, 'pos', 'center'),
-        \   'line': get(l:opts_before, 'line', 'cursor'),
-        \   'col': get(l:opts_before, 'col', 'cursor'),
-        \   'minwidth': get(l:opts_before, 'minwidth', 60),
-        \   'minheight': get(l:opts_before, 'minheight', 10),
-        \   'maxwidth': get(l:opts_before, 'maxwidth', 60),
-        \   'maxheight': get(l:opts_before, 'maxheight', 10)
-        \}
-        call popup_setoptions(a:winid, l:restore_opts)
-        let l:opts_after = popup_getoptions(a:winid)
-        echom "DEBUG: After S-Up - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
-        return 1
-    elseif a:key == "\<Down>" || a:key == 'j'
-        " Scroll down one line - force preserve window attributes
-        let l:opts_before = popup_getoptions(a:winid)
-        echom "DEBUG: Before j/Down - pos:" . get(l:opts_before, 'pos', 'center') . " firstline:" . get(l:opts_before, 'firstline', 1) . " minwidth:" . get(l:opts_before, 'minwidth', 'auto') . " minheight:" . get(l:opts_before, 'minheight', 'auto')
-        let l:current_first = get(l:opts_before, 'firstline', 1)
-        echom "DEBUG: j/Down scroll from line " . l:current_first . " to " . (l:current_first + 1)
-        " Use win_execute to execute scroll commands in the popup window context
-        call win_execute(a:winid, 'normal! ' . "\<C-E>")
-        " Force restore original window attributes after scrolling
-        let l:restore_opts = {
-        \   'pos': get(l:opts_before, 'pos', 'center'),
-        \   'line': get(l:opts_before, 'line', 'cursor'),
-        \   'col': get(l:opts_before, 'col', 'cursor'),
-        \   'minwidth': get(l:opts_before, 'minwidth', 60),
-        \   'minheight': get(l:opts_before, 'minheight', 10),
-        \   'maxwidth': get(l:opts_before, 'maxwidth', 60),
-        \   'maxheight': get(l:opts_before, 'maxheight', 10)
-        \}
-        call popup_setoptions(a:winid, l:restore_opts)
-        let l:opts_after = popup_getoptions(a:winid)
-        echom "DEBUG: After j/Down - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
-        return 1
-    elseif a:key == "\<Up>" || a:key == 'k'
-        " Scroll up one line - force preserve window attributes
-        let l:opts_before = popup_getoptions(a:winid)
-        echom "DEBUG: Before k/Up - pos:" . get(l:opts_before, 'pos', 'center') . " firstline:" . get(l:opts_before, 'firstline', 1) . " minwidth:" . get(l:opts_before, 'minwidth', 'auto') . " minheight:" . get(l:opts_before, 'minheight', 'auto')
-        let l:current_first = get(l:opts_before, 'firstline', 1)
-        let l:new_first = max([1, l:current_first - 1])
-        echom "DEBUG: k/Up scroll from line " . l:current_first . " to " . l:new_first
-        " Use win_execute to execute scroll commands in the popup window context
-        call win_execute(a:winid, 'normal! ' . "\<C-Y>")
-        " Force restore original window attributes after scrolling
-        let l:restore_opts = {
-        \   'pos': get(l:opts_before, 'pos', 'center'),
-        \   'line': get(l:opts_before, 'line', 'cursor'),
-        \   'col': get(l:opts_before, 'col', 'cursor'),
-        \   'minwidth': get(l:opts_before, 'minwidth', 60),
-        \   'minheight': get(l:opts_before, 'minheight', 10),
-        \   'maxwidth': get(l:opts_before, 'maxwidth', 60),
-        \   'maxheight': get(l:opts_before, 'maxheight', 10)
-        \}
-        call popup_setoptions(a:winid, l:restore_opts)
-        let l:opts_after = popup_getoptions(a:winid)
-        echom "DEBUG: After k/Up - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
-        return 1
     endif
     return 0
 endfunction
-                ''')
+            ''')
+        else:
+            # Fallback: split window
+            vim.command(f'''
+" Fallback to split window
+let l:current_win = winnr()
+execute 'split __dashboard_sql__'
+execute 'buffer ' . l:temp_buf
+resize {height}
 
-            elif popup_type == "nvim":
-                vim.command('echohl WarningMsg | echo "DEBUG: Creating Neovim floating window..." | echohl None')
+" Set up key mappings for split window
+nnoremap <buffer> q :close<CR>
+nnoremap <buffer> <Esc> :close<CR>
+nnoremap <buffer> y :call DashboardCopySQLContent()<CR>
 
-                # Use individual commands to avoid complex string escaping
-                vim.command('let l:buf = nvim_create_buf(v:false, v:true)')
-                vim.command('call nvim_buf_set_lines(l:buf, 0, -1, v:true, l:popup_content)')
-                vim.command("call nvim_buf_set_option(l:buf, 'filetype', 'sql')")
-                vim.command("call nvim_buf_set_option(l:buf, 'modifiable', v:false)")
+function! DashboardCopySQLContent()
+    let l:lines = getline(10, '$')  " Skip first 9 lines
+    let l:text = join(l:lines, "\\n")
+    let @+ = l:text
+    let @* = l:text
+    echo "SQL content copied to clipboard!"
+endfunction
+            ''')
 
-                vim.command("let l:width = min([max([max(map(copy(l:popup_content), 'len(v:val)')) + 4, 60]), 120])")
-                vim.command('let l:height = min([len(l:popup_content) + 2, 30])')
-
-                # Create options dictionary step by step
-                vim.command('let l:opts = {}')
-                vim.command("let l:opts['relative'] = 'editor'")
-                vim.command("let l:opts['width'] = l:width")
-                vim.command("let l:opts['height'] = l:height")
-                vim.command("let l:opts['col'] = (&columns - l:width) / 2")
-                vim.command("let l:opts['row'] = (&lines - l:height) / 2")
-                vim.command("let l:opts['anchor'] = 'NW'")
-                vim.command("let l:opts['style'] = 'minimal'")
-                vim.command("let l:opts['border'] = 'rounded'")
-
-                vim.command('let g:dashboard_sql_popup_id = nvim_open_win(l:buf, v:true, l:opts)')
-
-                # Add key mappings for Neovim floating window
-                vim.command('nnoremap <buffer> q :lua vim.api.nvim_win_close(0, true)<CR>')
-                vim.command('nnoremap <buffer> <Esc> :lua vim.api.nvim_win_close(0, true)<CR>')
-                vim.command('nnoremap <buffer> y :lua DashboardCopyAllContent()<CR>')
-                vim.command('nnoremap <buffer> <C-c> :lua DashboardCopyAllContent()<CR>')
-                vim.command('nnoremap <buffer> <S-Down> :lua DashboardScrollDown(10)<CR>')
-                vim.command('nnoremap <buffer> <S-Up> :lua DashboardScrollUp(10)<CR>')
-                vim.command('nnoremap <buffer> <Down> :lua DashboardScrollDown(1)<CR>')
-                vim.command('nnoremap <buffer> <Up> :lua DashboardScrollUp(1)<CR>')
-                vim.command('nnoremap <buffer> j :lua DashboardScrollDown(1)<CR>')
-                vim.command('nnoremap <buffer> k :lua DashboardScrollUp(1)<CR>')
-
-                # Define Lua functions for copying content and scrolling
-                vim.command('''
-lua << EOF
-function DashboardCopyAllContent()
+        vim.command('echo "SQL popup created. Press q/Esc to close, y to copy SQL content."')
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
     -- Skip the first 4 lines (operation keys section)
     local sql_lines = {}
@@ -1345,88 +1297,6 @@ function DashboardScrollUp(lines)
     local win_height_after = vim.api.nvim_win_get_height(win)
     local win_width_after = vim.api.nvim_win_get_width(win)
     local win_pos_after = vim.api.nvim_win_get_position(win)
-    print("DEBUG: Neovim After scroll up - pos:" .. (win_config_after.relative or 'normal') .. " row:" .. win_pos_after[1] .. " col:" .. win_pos_after[2] .. " width:" .. win_width_after .. " height:" .. win_height_after)
-end
-EOF
-                ''')
-            else:
-                vim.command('echohl WarningMsg | echo "DEBUG: Using fallback split window..." | echohl None')
-
-                # Use individual commands to avoid complex string escaping
-                vim.command('new')
-                vim.command('setlocal buftype=nofile noswapfile readonly filetype=sql')
-                vim.command('call setline(1, l:popup_content)')
-
-                # Add key mappings for fallback split window
-                vim.command('nnoremap <buffer> q :quit<CR>')
-                vim.command('nnoremap <buffer> <Esc> :quit<CR>')
-                vim.command('nnoremap <buffer> y :call DashboardCopyAllContentFallback()<CR>')
-                vim.command('nnoremap <buffer> <C-c> :call DashboardCopyAllContentFallback()<CR>')
-                vim.command('nnoremap <buffer> <S-Down> :call DashboardScrollDownFallback(10)<CR>')
-                vim.command('nnoremap <buffer> <S-Up> :call DashboardScrollUpFallback(10)<CR>')
-                vim.command('nnoremap <buffer> <Down> :call DashboardScrollDownFallback(1)<CR>')
-                vim.command('nnoremap <buffer> <Up> :call DashboardScrollUpFallback(1)<CR>')
-                vim.command('nnoremap <buffer> j :call DashboardScrollDownFallback(1)<CR>')
-                vim.command('nnoremap <buffer> k :call DashboardScrollUpFallback(1)<CR>')
-
-                vim.command('resize 20')
-
-                # Define VimScript functions for copying content and scrolling in fallback mode
-                vim.command(r'''
-function! DashboardCopyAllContentFallback()
-    let l:lines = getline(1, '$')
-    " Skip the first 4 lines (operation keys section)
-    let l:sql_lines = l:lines[4:]
-    let l:text = join(l:sql_lines, "\n")
-    let @+ = l:text
-    let @* = l:text
-    echo "SQL content copied to clipboard!"
-endfunction
-
-function! DashboardScrollDownFallback(lines)
-    " Use Ctrl+E to scroll down without changing window size/position
-    echom "DEBUG: Fallback Before scroll down - winheight:" . winheight(0) . " winwidth:" . winwidth(0) . " line:" . line('.') . " wintop:" . line('w0')
-    echom "DEBUG: Fallback scroll down " . a:lines . " lines"
-    let l:i = 0
-    while l:i < a:lines
-        execute "normal! \\<C-e>"
-        let l:i = l:i + 1
-    endwhile
-    echom "DEBUG: Fallback After scroll down - winheight:" . winheight(0) . " winwidth:" . winwidth(0) . " line:" . line('.') . " wintop:" . line('w0')
-endfunction
-
-function! DashboardScrollUpFallback(lines)
-    " Use Ctrl+Y to scroll up without changing window size/position
-    echom "DEBUG: Fallback Before scroll up - winheight:" . winheight(0) . " winwidth:" . winwidth(0) . " line:" . line('.') . " wintop:" . line('w0')
-    echom "DEBUG: Fallback scroll up " . a:lines . " lines"
-    let l:i = 0
-    while l:i < a:lines
-        execute "normal! \\<C-y>"
-        let l:i = l:i + 1
-    endwhile
-    echom "DEBUG: Fallback After scroll up - winheight:" . winheight(0) . " winwidth:" . winwidth(0) . " line:" . line('.') . " wintop:" . line('w0')
-endfunction
-                ''')
-
-            vim.command('echohl WarningMsg | echo "DEBUG: Popup creation completed successfully" | echohl None')
-
-            # Show help message for all popup types
-            vim.command('echohl MoreMsg | echo "SQL Popup Help: q/Esc=Close, y/Ctrl-c=Copy, Shift+Down/Up=Page, j/k/Down/Up=Line" | echohl None')
-
-        except Exception as vim_error:
-            vim.command(f'echohl ErrorMsg | echo "DEBUG: VimScript error: {repr(str(vim_error))}" | echohl None')
-            raise vim_error
-
-        # No cleanup needed since we're not using temporary buffers
-        vim.command('echohl WarningMsg | echo "DEBUG: No cleanup needed for direct content passing" | echohl None')
-
-        vim.command('echohl WarningMsg | echo "DEBUG: dashboard_show_sql completed successfully" | echohl None')
-
     except Exception as e:
-        vim.command(f'echohl ErrorMsg | echo "DEBUG: Exception caught: {repr(str(e))}" | echohl None')
-        vim.command(f'echohl ErrorMsg | echo "DEBUG: Exception type: {type(e).__name__}" | echohl None')
-        import traceback
-        tb_str = traceback.format_exc()
-        vim.command(f'echohl ErrorMsg | echo "DEBUG: Traceback: {repr(tb_str)}" | echohl None')
         error_msg = format_error_message(e, "Show SQL")
         vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
