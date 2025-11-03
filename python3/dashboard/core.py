@@ -1006,8 +1006,12 @@ def dashboard_reset_variables():
 def dashboard_show_sql():
     """Show the rendered SQL for current dashboard."""
     try:
+        # Add debug logging
+        vim.command('echohl WarningMsg | echo "[DEBUG] Starting dashboard_show_sql" | echohl None')
+
         # Get current buffer file path
         current_file = vim.current.buffer.name
+        vim.command(f'echohl WarningMsg | echo "[DEBUG] Current file: {current_file}" | echohl None')
 
         if not current_file:
             vim.command('echohl ErrorMsg | echo "No active dashboard buffer" | echohl None')
@@ -1029,6 +1033,7 @@ def dashboard_show_sql():
 
         # Get the rendered SQL
         rendered_sql = current_task.get_rendered_sql()
+        vim.command('echohl WarningMsg | echo "[DEBUG] Got rendered SQL" | echohl None')
 
         if not rendered_sql:
             vim.command('echohl WarningMsg | echo "No SQL found for current dashboard" | echohl None')
@@ -1070,18 +1075,8 @@ def dashboard_show_sql():
         lines.extend(["", "Rendered SQL:"])
         lines.extend(sql_lines)
 
-        # Calculate popup dimensions
-        max_width = max(len(line) for line in lines) + 4
-        max_height = min(len(lines) + 2, 30)  # Limit height to 30 lines
+        vim.command('echohl WarningMsg | echo "[DEBUG] Creating buffer" | echohl None')
 
-        # Ensure minimum dimensions
-        popup_width = max(max_width, 60)
-        popup_height = max(max_height, 10)
-
-        # Create popup using coc.nvim-style implementation
-        # Simple, reliable approach without complex scrolling logic
-
-        # Prepare content for display - use safer approach with list
         # Create a temporary buffer with the content
         vim.command('let l:temp_buf = bufnr("__dashboard_sql__", 1)')
         vim.command('call bufload(l:temp_buf)')
@@ -1092,8 +1087,9 @@ def dashboard_show_sql():
         # Set buffer content using setbufline with list to avoid escaping issues
         vim.command('let l:content_lines = []')
         for i, line in enumerate(lines):
-            # Use vim.eval to safely pass the line content
-            vim.command(f'let l:line_{i} = {repr(line)}')
+            # Use repr() to safely escape the line content
+            safe_line = repr(line)
+            vim.command(f'let l:line_{i} = {safe_line}')
             vim.command(f'call add(l:content_lines, l:line_{i})')
 
         vim.command('call setbufline(l:temp_buf, 1, l:content_lines)')
@@ -1110,11 +1106,13 @@ def dashboard_show_sql():
         width = max(max_width, 60)
         height = min(len(lines) + 2, 25)
 
+        vim.command(f'echohl WarningMsg | echo "[DEBUG] Dimensions: {width}x{height}" | echohl None')
+
         # Check editor type and create appropriate popup
         if vim.eval('has("nvim")') == '1':
-            # Neovim floating window
-            vim.command(f'''
-lua << EOF
+            vim.command('echohl WarningMsg | echo "[DEBUG] Using Neovim floating window" | echohl None')
+            # Neovim floating window - use safer approach
+            lua_script = f'''
 local buf = vim.fn.bufnr("__dashboard_sql__")
 local width = {width}
 local height = {height}
@@ -1153,7 +1151,7 @@ local function copy_content()
     for i = 10, #lines do
         table.insert(sql_lines, lines[i])
     end
-    local content = table.concat(sql_lines, "\\\\n")
+    local content = table.concat(sql_lines, "\\n")
     vim.fn.setreg('+', content)
     vim.fn.setreg('*', content)
     print("SQL content copied to clipboard!")
@@ -1178,10 +1176,13 @@ vim.api.nvim_buf_set_keymap(buf, 'n', 'y', '', {{
 
 -- Store window ID for cleanup
 vim.g.dashboard_sql_popup_win = win
-EOF
-            ''')
+'''
+            vim.command('lua << EOF')
+            vim.command(lua_script)
+            vim.command('EOF')
         elif vim.eval('exists("*popup_create")') == '1':
-            # Vim popup
+            vim.command('echohl WarningMsg | echo "[DEBUG] Using Vim popup" | echohl None')
+            # Vim popup - fix escaping issues
             vim.command(f'''
 let l:popup_opts = {{
     \\ 'title': ' SQL Query ',
@@ -1203,14 +1204,14 @@ let l:popup_opts = {{
 let g:dashboard_sql_popup_id = popup_create(l:temp_buf, l:popup_opts)
 
 function! DashboardSQLPopupFilter(winid, key)
-    if a:key == 'q' || a:key == "\\\\<Esc>"
+    if a:key == 'q' || a:key == "\\<Esc>"
         call popup_close(a:winid)
         return 1
     elseif a:key == 'y'
         " Copy SQL content to clipboard (skip header lines)
         let l:bufnr = winbufnr(a:winid)
         let l:lines = getbufline(l:bufnr, 10, '$')  " Skip first 9 lines
-        let l:text = join(l:lines, "\\\\n")
+        let l:text = join(l:lines, "\\n")
         let @+ = l:text
         let @* = l:text
         echo "SQL content copied to clipboard!"
@@ -1220,7 +1221,8 @@ function! DashboardSQLPopupFilter(winid, key)
 endfunction
             ''')
         else:
-            # Fallback: split window
+            vim.command('echohl WarningMsg | echo "[DEBUG] Using split window fallback" | echohl None')
+            # Fallback: split window - fix escaping
             vim.command(f'''
 " Fallback to split window
 let l:current_win = winnr()
@@ -1235,15 +1237,19 @@ nnoremap <buffer> y :call DashboardCopySQLContent()<CR>
 
 function! DashboardCopySQLContent()
     let l:lines = getline(10, '$')  " Skip first 9 lines
-    let l:text = join(l:lines, "\\\\n")
+    let l:text = join(l:lines, "\\n")
     let @+ = l:text
     let @* = l:text
     echo "SQL content copied to clipboard!"
 endfunction
             ''')
 
-        vim.command('echo "SQL popup created. Press q/Esc to close, y to copy SQL content."')
+        vim.command('echohl MoreMsg | echo "SQL popup created. Press q/Esc to close, y to copy SQL content." | echohl None')
 
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        vim.command(f'echohl ErrorMsg | echo "[DEBUG] Exception: {str(e)}" | echohl None')
+        vim.command(f'echohl ErrorMsg | echo "[DEBUG] Traceback: {error_details[:200]}" | echohl None')
         error_msg = format_error_message(e, "Show SQL")
         vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
