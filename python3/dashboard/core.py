@@ -1188,6 +1188,19 @@ local function scroll_page_up()
     vim.api.nvim_win_set_cursor(win, {{new_line, 0}})
 end
 
+local function scroll_line_down()
+    local current_line = vim.api.nvim_win_get_cursor(win)[1]
+    local total_lines = vim.api.nvim_buf_line_count(buf)
+    local new_line = math.min(current_line + 1, total_lines)
+    vim.api.nvim_win_set_cursor(win, {{new_line, 0}})
+end
+
+local function scroll_line_up()
+    local current_line = vim.api.nvim_win_get_cursor(win)[1]
+    local new_line = math.max(current_line - 1, 1)
+    vim.api.nvim_win_set_cursor(win, {{new_line, 0}})
+end
+
 -- Key mappings
 vim.api.nvim_buf_set_keymap(buf, 'n', 'q', '', {{
     callback = close_popup,
@@ -1207,54 +1220,42 @@ vim.api.nvim_buf_set_keymap(buf, 'n', 'y', '', {{
 
 -- Scrolling key mappings
 vim.api.nvim_buf_set_keymap(buf, 'n', 'j', '', {{
-    callback = function()
-        local current_line = vim.api.nvim_win_get_cursor(win)[1]
-        local total_lines = vim.api.nvim_buf_line_count(buf)
-        if current_line < total_lines then
-            vim.api.nvim_win_set_cursor(win, {{current_line + 1, 0}})
-        end
-    end,
+    callback = scroll_line_down,
     noremap = true,
     silent = true
 }})
 vim.api.nvim_buf_set_keymap(buf, 'n', 'k', '', {{
-    callback = function()
-        local current_line = vim.api.nvim_win_get_cursor(win)[1]
-        if current_line > 1 then
-            vim.api.nvim_win_set_cursor(win, {{current_line - 1, 0}})
-        end
-    end,
+    callback = scroll_line_up,
     noremap = true,
     silent = true
 }})
 vim.api.nvim_buf_set_keymap(buf, 'n', '<Down>', '', {{
-    callback = function()
-        local current_line = vim.api.nvim_win_get_cursor(win)[1]
-        local total_lines = vim.api.nvim_buf_line_count(buf)
-        if current_line < total_lines then
-            vim.api.nvim_win_set_cursor(win, {{current_line + 1, 0}})
-        end
-    end,
+    callback = scroll_line_down,
     noremap = true,
     silent = true
 }})
 vim.api.nvim_buf_set_keymap(buf, 'n', '<Up>', '', {{
-    callback = function()
-        local current_line = vim.api.nvim_win_get_cursor(win)[1]
-        if current_line > 1 then
-            vim.api.nvim_win_set_cursor(win, {{current_line - 1, 0}})
-        end
-    end,
+    callback = scroll_line_up,
+    noremap = true,
+    silent = true
+}})
+vim.api.nvim_buf_set_keymap(buf, 'n', '<S-j>', '', {{
+    callback = scroll_page_down,
+    noremap = true,
+    silent = true
+}})
+vim.api.nvim_buf_set_keymap(buf, 'n', '<S-k>', '', {{
+    callback = scroll_page_up,
     noremap = true,
     silent = true
 }})
 vim.api.nvim_buf_set_keymap(buf, 'n', '<S-Down>', '', {{
-    callback = scroll_down,
+    callback = scroll_page_down,
     noremap = true,
     silent = true
 }})
 vim.api.nvim_buf_set_keymap(buf, 'n', '<S-Up>', '', {{
-    callback = scroll_up,
+    callback = scroll_page_up,
     noremap = true,
     silent = true
 }})
