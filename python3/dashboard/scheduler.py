@@ -332,6 +332,9 @@ class DashboardTask:
                 'last_run': self.last_run
             }
 
+            # Add config file path for title fallback
+            config_with_countdown['_config_file'] = self.config_file
+
             # Add variables information to config for display (only if args_show is True)
             query_config = self.config.get('query', {})
             should_show_variables = query_config.get('args_show', False) if isinstance(query_config, dict) else False

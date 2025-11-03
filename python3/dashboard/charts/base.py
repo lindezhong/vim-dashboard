@@ -49,6 +49,15 @@ class BaseChart(ABC):
         if not base_title:
             base_title = self.config.get('title') or self.style.get('title')
 
+        # If no title found, use config file name as title
+        if not base_title:
+            config_file = self.config.get('_config_file')
+            if config_file:
+                import os
+                # Extract filename without extension
+                filename = os.path.splitext(os.path.basename(config_file))[0]
+                base_title = filename
+
         # Add countdown information if available
         countdown_info = self.config.get('_countdown_info')
         if countdown_info:
