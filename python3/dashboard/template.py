@@ -181,13 +181,20 @@ class SQLTemplateEngine:
     
     def _clean_sql(self, sql: str) -> str:
         """Clean up rendered SQL string."""
-        # Remove excessive whitespace
-        sql = re.sub(r'\s+', ' ', sql.strip())
-        
-        # Remove empty lines
-        lines = [line.strip() for line in sql.split('\n') if line.strip()]
-        
-        return '\n'.join(lines)
+        # Split into lines and process each line
+        lines = sql.split('\n')
+        cleaned_lines = []
+
+        for line in lines:
+            # Remove leading/trailing whitespace from each line
+            line = line.strip()
+            if line:  # Only keep non-empty lines
+                # Replace multiple spaces/tabs with single space within the line
+                line = re.sub(r'[ \t]+', ' ', line)
+                cleaned_lines.append(line)
+
+        # Join lines back with newlines, preserving multi-line format
+        return '\n'.join(cleaned_lines)
     
     def _validate_sql_safety(self, sql: str) -> None:
         """
