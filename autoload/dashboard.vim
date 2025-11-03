@@ -520,8 +520,7 @@ function! dashboard#setup_dashboard_buffer()
     " Start periodic refresh timer
     call dashboard#start_refresh_timer()
 
-    " Show help message
-    echo "Dashboard buffer keys: v=modify variable, V=show variables, r=refresh, R=reset variables, s=show SQL"
+    " Help message removed for silent execution
 
   endif
 endfunction
