@@ -7,38 +7,52 @@ database:
 
 # 查询配置 - 包含SQL模板和参数定义
 query:
+  # 控制是否显示Variables视图, 默认不显示
+  args_show: True
   # 参数定义 - 支持多种数据类型和默认值
   args:
     # 字符串参数
     - name: user_status
+      # 控制这个变量在Variables视图中是否显示默认True
+      show: False
       type: string
       default: "active"
       description: "用户状态过滤条件"
 
     # 数字参数
     - name: min_age
+      # 控制这个变量在Variables视图中是否显示默认True
+      show: False
       type: number
       default: 18
       description: "最小年龄"
 
     - name: max_age
+      # 控制这个变量在Variables视图中是否显示默认True
+      show: False
       type: number
       default: 65
       description: "最大年龄"
 
     # 布尔参数
     - name: include_deleted
+      # 控制这个变量在Variables视图中是否显示默认True
+      show: False
       type: boolean
       default: false
       description: "是否包含已删除用户"
 
     # 列表参数
     - name: departments
+      # 控制这个变量在Variables视图中是否显示默认True
+      show: False
       type: list
       default: ["IT", "HR", "Finance"]
       description: "部门列表"
 
     - name: user_ids
+      # 控制这个变量在Variables视图中是否显示默认True
+      show: False
       type: list
       default: [1, 2, 3]
       description: "用户ID列表"
