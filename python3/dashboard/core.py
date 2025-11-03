@@ -1006,20 +1006,29 @@ def dashboard_reset_variables():
 def dashboard_show_sql():
     """Show the rendered SQL for current dashboard."""
     try:
+        # Debug: Start of function
+        vim.command('echohl WarningMsg | echo "DEBUG: dashboard_show_sql started" | echohl None')
+
         # Get current buffer file path
         current_file = vim.current.buffer.name
+        vim.command(f'echohl WarningMsg | echo "DEBUG: current_file = {repr(current_file)}" | echohl None')
+
         if not current_file:
             vim.command('echohl ErrorMsg | echo "No active dashboard buffer" | echohl None')
             return
 
         # Find the task associated with this temp file
+        vim.command('echohl WarningMsg | echo "DEBUG: Getting dashboard core..." | echohl None')
         core = get_dashboard_core()
         tasks = core.scheduler.list_tasks()
+        vim.command(f'echohl WarningMsg | echo "DEBUG: Found {len(tasks)} tasks" | echohl None')
 
         current_task = None
         for task_id, task_info in tasks.items():
+            vim.command(f'echohl WarningMsg | echo "DEBUG: Checking task {task_id}, temp_file: {repr(task_info.get(\"temp_file\"))}" | echohl None')
             if task_info.get('temp_file') == current_file:
                 current_task = core.scheduler.get_task(task_id)
+                vim.command(f'echohl WarningMsg | echo "DEBUG: Found matching task: {task_id}" | echohl None')
                 break
 
         if not current_task:
@@ -1027,13 +1036,16 @@ def dashboard_show_sql():
             return
 
         # Get the rendered SQL
+        vim.command('echohl WarningMsg | echo "DEBUG: Getting rendered SQL..." | echohl None')
         rendered_sql = current_task.get_rendered_sql()
+        vim.command(f'echohl WarningMsg | echo "DEBUG: SQL length: {len(rendered_sql) if rendered_sql else 0}" | echohl None')
 
         if not rendered_sql:
             vim.command('echohl WarningMsg | echo "No SQL found for current dashboard" | echohl None')
             return
 
         # Prepare SQL content for popup display
+        vim.command('echohl WarningMsg | echo "DEBUG: Preparing popup content..." | echohl None')
         sql_lines = rendered_sql.split('\n')
 
         # Add header
@@ -1047,6 +1059,8 @@ def dashboard_show_sql():
 
         # Add variables info
         variables_info = current_task.get_variables_info()
+        vim.command(f'echohl WarningMsg | echo "DEBUG: Variables info: {repr(variables_info)}" | echohl None')
+
         if variables_info:
             for var_name, var_info in variables_info.items():
                 current_value = var_info.get('current_value', var_info.get('default_value', ''))
@@ -1057,6 +1071,8 @@ def dashboard_show_sql():
         lines.extend(["", "Rendered SQL:"])
         lines.extend(sql_lines)
 
+        vim.command(f'echohl WarningMsg | echo "DEBUG: Content prepared, {len(lines)} lines" | echohl None')
+
         # Calculate popup dimensions
         max_width = max(len(line) for line in lines) + 4
         max_height = min(len(lines) + 2, 30)  # Limit height to 30 lines
@@ -1065,90 +1081,139 @@ def dashboard_show_sql():
         popup_width = max(max_width, 60)
         popup_height = max(max_height, 10)
 
+        vim.command(f'echohl WarningMsg | echo "DEBUG: Popup dimensions: {popup_width}x{popup_height}" | echohl None')
+
         # Create popup using Vim's popup functionality
         # Use the safest method: create a temporary buffer and read from it
         # This completely avoids any string escaping issues
 
         # Create a temporary buffer with the content
+        vim.command('echohl WarningMsg | echo "DEBUG: Creating temporary buffer..." | echohl None')
         vim.command('new')
         vim.command('setlocal buftype=nofile noswapfile')
 
         # Set the content in the buffer (no escaping needed)
+        vim.command('echohl WarningMsg | echo "DEBUG: Setting buffer content..." | echohl None')
+
+        # Debug: Check if any lines contain problematic characters
+        for i, line in enumerate(lines):
+            if '\\' in line:
+                vim.command(f'echohl WarningMsg | echo "DEBUG: Line {i} contains backslash: {repr(line)}" | echohl None')
+
         vim.current.buffer[:] = lines
 
         # Get buffer number for reference
         temp_buf_num = vim.current.buffer.number
+        vim.command(f'echohl WarningMsg | echo "DEBUG: Temp buffer number: {temp_buf_num}" | echohl None')
 
         # Close the temporary buffer window but keep the buffer
+        vim.command('echohl WarningMsg | echo "DEBUG: Closing temp window..." | echohl None')
         vim.command('quit')
 
         # Create popup using separate commands to avoid complex string interpolation
+        vim.command('echohl WarningMsg | echo "DEBUG: Setting up popup variables..." | echohl None')
         vim.command(f'let g:temp_buf_num = {temp_buf_num}')
 
         # Execute VimScript commands step by step
+        vim.command('echohl WarningMsg | echo "DEBUG: Getting buffer lines..." | echohl None')
         vim.command('let l:popup_content = getbufline(g:temp_buf_num, 1, "$")')
 
+        # Debug: Check the content that will be passed to popup
+        vim.command('echohl WarningMsg | echo "DEBUG: Checking popup content..." | echohl None')
+        vim.command('for line in l:popup_content | if match(line, "\\\\") >= 0 | echohl WarningMsg | echo "DEBUG: Found backslash in line: " . line | echohl None | endif | endfor')
+
         # Check for popup support and create accordingly
-        vim.command(r'''
-        if exists('*popup_create')
-            " Vim 8.2+ popup
-            let l:popup_opts = {
-                \ 'title': ' SQL Query ',
-                \ 'wrap': 1,
-                \ 'scrollbar': 1,
-                \ 'resize': 1,
-                \ 'close': 'button',
-                \ 'border': [],
-                \ 'borderchars': ['─', '│', '─', '│', '┌', '┐', '┘', '└'],
-                \ 'minwidth': 60,
-                \ 'maxwidth': 120,
-                \ 'minheight': 10,
-                \ 'maxheight': 30,
-                \ 'pos': 'center',
-                \ 'mapping': 0,
-                \ 'filter': 'dashboard#sql_popup_filter',
-                \ 'callback': 'dashboard#sql_popup_callback'
-            \ }
-            let g:dashboard_sql_popup_id = popup_create(l:popup_content, l:popup_opts)
-            call popup_setoptions(g:dashboard_sql_popup_id, {'filetype': 'sql'})
-        elseif exists('*nvim_open_win')
-            " Neovim floating window
-            let l:buf = nvim_create_buf(v:false, v:true)
-            call nvim_buf_set_lines(l:buf, 0, -1, v:true, l:popup_content)
-            call nvim_buf_set_option(l:buf, 'filetype', 'sql')
-            call nvim_buf_set_option(l:buf, 'modifiable', v:false)
+        vim.command('echohl WarningMsg | echo "DEBUG: About to execute popup creation script..." | echohl None')
 
-            let l:width = min([max([max(map(copy(l:popup_content), 'len(v:val)')) + 4, 60]), 120])
-            let l:height = min([len(l:popup_content) + 2, 30])
+        # Split the VimScript into smaller parts to isolate the problem
+        try:
+            vim.command('echohl WarningMsg | echo "DEBUG: Step 1 - Check popup support" | echohl None')
+            vim.command('if exists("*popup_create") | let g:debug_popup_type = "vim" | elseif exists("*nvim_open_win") | let g:debug_popup_type = "nvim" | else | let g:debug_popup_type = "fallback" | endif')
 
-            let l:opts = {
-                \ 'relative': 'editor',
-                \ 'width': l:width,
-                \ 'height': l:height,
-                \ 'col': (&columns - l:width) / 2,
-                \ 'row': (&lines - l:height) / 2,
-                \ 'anchor': 'NW',
-                \ 'style': 'minimal',
-                \ 'border': 'rounded'
-            \ }
+            popup_type = vim.eval('g:debug_popup_type')
+            vim.command(f'echohl WarningMsg | echo "DEBUG: Popup type: {popup_type}" | echohl None')
 
-            let g:dashboard_sql_popup_id = nvim_open_win(l:buf, v:true, l:opts)
-            nnoremap <buffer> q :lua vim.api.nvim_win_close(0, true)<CR>
-            nnoremap <buffer> <Esc> :lua vim.api.nvim_win_close(0, true)<CR>
-        else
-            " Fallback to split window for older versions
-            new
-            setlocal buftype=nofile noswapfile readonly filetype=sql
-            call setline(1, l:popup_content)
-            nnoremap <buffer> q :quit<CR>
-            resize 20
-        endif
-        ''')
+            if popup_type == "vim":
+                vim.command('echohl WarningMsg | echo "DEBUG: Creating Vim popup..." | echohl None')
+                vim.command(r'''
+                let l:popup_opts = {
+                    \ 'title': ' SQL Query ',
+                    \ 'wrap': 1,
+                    \ 'scrollbar': 1,
+                    \ 'resize': 1,
+                    \ 'close': 'button',
+                    \ 'border': [],
+                    \ 'borderchars': ['─', '│', '─', '│', '┌', '┐', '┘', '└'],
+                    \ 'minwidth': 60,
+                    \ 'maxwidth': 120,
+                    \ 'minheight': 10,
+                    \ 'maxheight': 30,
+                    \ 'pos': 'center',
+                    \ 'mapping': 0
+                \ }
+                ''')
+                vim.command('echohl WarningMsg | echo "DEBUG: Popup options created" | echohl None')
+
+                vim.command('let g:dashboard_sql_popup_id = popup_create(l:popup_content, l:popup_opts)')
+                vim.command('echohl WarningMsg | echo "DEBUG: Popup created successfully" | echohl None')
+
+                vim.command('call popup_setoptions(g:dashboard_sql_popup_id, {"filetype": "sql"})')
+                vim.command('echohl WarningMsg | echo "DEBUG: Popup filetype set" | echohl None')
+
+            elif popup_type == "nvim":
+                vim.command('echohl WarningMsg | echo "DEBUG: Creating Neovim floating window..." | echohl None')
+                vim.command(r'''
+                let l:buf = nvim_create_buf(v:false, v:true)
+                call nvim_buf_set_lines(l:buf, 0, -1, v:true, l:popup_content)
+                call nvim_buf_set_option(l:buf, 'filetype', 'sql')
+                call nvim_buf_set_option(l:buf, 'modifiable', v:false)
+
+                let l:width = min([max([max(map(copy(l:popup_content), 'len(v:val)')) + 4, 60]), 120])
+                let l:height = min([len(l:popup_content) + 2, 30])
+
+                let l:opts = {
+                    \ 'relative': 'editor',
+                    \ 'width': l:width,
+                    \ 'height': l:height,
+                    \ 'col': (&columns - l:width) / 2,
+                    \ 'row': (&lines - l:height) / 2,
+                    \ 'anchor': 'NW',
+                    \ 'style': 'minimal',
+                    \ 'border': 'rounded'
+                \ }
+
+                let g:dashboard_sql_popup_id = nvim_open_win(l:buf, v:true, l:opts)
+                nnoremap <buffer> q :lua vim.api.nvim_win_close(0, true)<CR>
+                nnoremap <buffer> <Esc> :lua vim.api.nvim_win_close(0, true)<CR>
+                ''')
+            else:
+                vim.command('echohl WarningMsg | echo "DEBUG: Using fallback split window..." | echohl None')
+                vim.command(r'''
+                new
+                setlocal buftype=nofile noswapfile readonly filetype=sql
+                call setline(1, l:popup_content)
+                nnoremap <buffer> q :quit<CR>
+                resize 20
+                ''')
+
+            vim.command('echohl WarningMsg | echo "DEBUG: Popup creation completed successfully" | echohl None')
+
+        except Exception as vim_error:
+            vim.command(f'echohl ErrorMsg | echo "DEBUG: VimScript error: {repr(str(vim_error))}" | echohl None')
+            raise vim_error
 
         # Clean up the temporary buffer
+        vim.command('echohl WarningMsg | echo "DEBUG: Cleaning up temp buffer..." | echohl None')
         vim.command('execute "bdelete! " . g:temp_buf_num')
         vim.command('unlet g:temp_buf_num')
 
+        vim.command('echohl WarningMsg | echo "DEBUG: dashboard_show_sql completed successfully" | echohl None')
+
     except Exception as e:
+        vim.command(f'echohl ErrorMsg | echo "DEBUG: Exception caught: {repr(str(e))}" | echohl None')
+        vim.command(f'echohl ErrorMsg | echo "DEBUG: Exception type: {type(e).__name__}" | echohl None')
+        import traceback
+        tb_str = traceback.format_exc()
+        vim.command(f'echohl ErrorMsg | echo "DEBUG: Traceback: {repr(tb_str)}" | echohl None')
         error_msg = format_error_message(e, "Show SQL")
         vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
