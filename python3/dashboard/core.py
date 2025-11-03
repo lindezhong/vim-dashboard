@@ -425,29 +425,17 @@ endfor
     def open_dashboard_browser(self) -> bool:
         """Open dashboard configuration browser in sidebar."""
         try:
-            dashboard_dir = get_platform_config_dir()
+            # Use current working directory instead of fixed config directory
+            try:
+                dashboard_dir = vim.eval('getcwd()')
+            except:
+                dashboard_dir = os.getcwd()
 
-            # Create dashboard directory if it doesn't exist
+            # Ensure directory exists (but don't create sample files in current directory)
             if not os.path.exists(dashboard_dir):
-                os.makedirs(dashboard_dir, exist_ok=True)
-                # Create a sample config file
-                sample_config = """# Sample Dashboard Configuration
-database:
-  type: sqlite
-  url: sqlite:///sample.db
-query: "SELECT 'Hello' as message, 'World' as target"
-interval: 30s
-show:
-  type: table
-  column_list:
-    - column: message
-      alias: Message
-    - column: target
-      alias: Target
-"""
-                sample_file = os.path.join(dashboard_dir, "sample.yaml")
-                with open(sample_file, 'w', encoding='utf-8') as f:
-                    f.write(sample_config)
+                # If current directory doesn't exist, something is wrong
+                vim.command('echohl ErrorMsg | echo "Current directory does not exist!" | echohl None')
+                return False
 
             # Get all YAML files in dashboard directory
             config_files = []
@@ -503,7 +491,7 @@ endfor
             # Set buffer content with status indicators
             lines = [
                 "Dashboard Sidebar",
-                f"Directory: {os.path.basename(dashboard_dir)}",
+                f"Directory: {dashboard_dir}",
                 "",
                 "▸ = Not running",
                 "▾ = Running",
