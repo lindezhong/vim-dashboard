@@ -250,8 +250,14 @@ class TableChart(BaseChart):
         # Add columns
         self._add_columns_to_table(table, columns_info)
 
-        # Add rows
-        self._add_rows_to_table(table, columns_info, paginated_data)
+        # Add rows - even if no data, still show table with headers
+        if paginated_data:
+            self._add_rows_to_table(table, columns_info, paginated_data)
+        else:
+            # Add a single row with "No data available" message
+            no_data_msg = "No data available"
+            empty_row = [no_data_msg] + [''] * (len(columns_info) - 1)
+            table.add_row(*empty_row, style='dim italic')
 
         # Add caption if configured
         self._add_caption_if_configured(table)
