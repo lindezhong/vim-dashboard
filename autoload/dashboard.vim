@@ -764,3 +764,35 @@ function! dashboard#sql_popup_callback(winid, result)
     unlet g:dashboard_sql_popup_id
   endif
 endfunction
+
+" Auto-start dashboard when opening .dashboard files
+function! dashboard#auto_start_from_dashboard_file()
+  " Get the current buffer's file path
+  let l:dashboard_file = expand('%:p')
+
+  " Check if this is actually a .dashboard file
+  if l:dashboard_file !~# '\.dashboard$'
+    return
+  endif
+
+  " Extract the base name without .dashboard extension
+  let l:base_name = fnamemodify(l:dashboard_file, ':r')
+
+  " Look for corresponding .yaml config file in the same directory
+  let l:config_file = l:base_name . '.yaml'
+
+  " Check if the config file exists
+  if !filereadable(l:config_file)
+    " Try .yml extension as fallback
+    let l:config_file = l:base_name . '.yml'
+    if !filereadable(l:config_file)
+      echohl WarningMsg
+      echom 'Dashboard config file not found: ' . l:base_name . '.yaml or ' . l:base_name . '.yml'
+      echohl None
+      return
+    endif
+  endif
+
+  " Start the dashboard with the found config file
+  call dashboard#start(l:config_file)
+endfunction

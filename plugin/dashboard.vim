@@ -34,6 +34,15 @@ command! -nargs=0 DashboardResetVariables call dashboard#reset_variables()
 " SQL viewing command
 command! -nargs=0 DashboardShowSQL call dashboard#show_sql()
 
+" Session management commands
+command! -nargs=? -bang -complete=file DashboardMksession call dashboard#enhanced_mksession(<bang>0, <q-args>)
+
+" Override standard mksession command to handle dashboard buffers automatically
+command! -nargs=? -bang -complete=file -range Mksession call dashboard#enhanced_mksession(<bang>0, <q-args>)
+
+" Create command abbreviation to intercept mksession calls
+cnoreabbrev <expr> mksession (getcmdtype() == ':' && getcmdline() == 'mksession') ? 'DashboardMksession' : 'mksession'
+
 " Auto commands
 augroup DashboardPlugin
   autocmd!
@@ -44,6 +53,8 @@ augroup DashboardPlugin
   autocmd BufRead,BufEnter */vim-dashboard/*.dashboard call dashboard#setup_dashboard_buffer()
   autocmd FileChangedShell */dashboard/*.dashboard call dashboard#handle_file_changed()
   autocmd FileChangedShell */vim-dashboard/*.dashboard call dashboard#handle_file_changed()
+  " Auto-start dashboard when opening .dashboard files
+  autocmd BufRead,BufNewFile *.dashboard call dashboard#auto_start_from_dashboard_file()
 augroup END
 
 " Key mappings (optional)
