@@ -1090,43 +1090,19 @@ def dashboard_show_sql():
         vim.command(f'echohl WarningMsg | echo "DEBUG: Popup dimensions: {popup_width}x{popup_height}" | echohl None')
 
         # Create popup using Vim's popup functionality
-        # Use the safest method: create a temporary buffer and read from it
-        # This completely avoids any string escaping issues
+        # Pass content directly to avoid any formatting issues with buffer operations
+        vim.command('echohl WarningMsg | echo "DEBUG: Converting Python list to VimScript format..." | echohl None')
 
-        # Create a temporary buffer with the content
-        vim.command('echohl WarningMsg | echo "DEBUG: Creating temporary buffer..." | echohl None')
-        vim.command('new')
-        vim.command('setlocal buftype=nofile noswapfile')
+        # Convert Python list to VimScript list format, preserving line breaks
+        vim_list_items = []
+        for line in lines:
+            # Escape single quotes and backslashes for VimScript
+            escaped_line = line.replace("'", "''").replace("\\", "\\\\")
+            vim_list_items.append(f"'{escaped_line}'")
 
-        # Set the content in the buffer (no escaping needed)
-        vim.command('echohl WarningMsg | echo "DEBUG: Setting buffer content..." | echohl None')
-
-        # Debug: Check if any lines contain problematic characters
-        for i, line in enumerate(lines):
-            if '\\' in line:
-                vim.command(f'echohl WarningMsg | echo "DEBUG: Line {i} contains backslash: {repr(line)}" | echohl None')
-
-        vim.current.buffer[:] = lines
-
-        # Get buffer number for reference
-        temp_buf_num = vim.current.buffer.number
-        vim.command(f'echohl WarningMsg | echo "DEBUG: Temp buffer number: {temp_buf_num}" | echohl None')
-
-        # Close the temporary buffer window but keep the buffer
-        vim.command('echohl WarningMsg | echo "DEBUG: Closing temp window..." | echohl None')
-        vim.command('quit')
-
-        # Create popup using separate commands to avoid complex string interpolation
-        vim.command('echohl WarningMsg | echo "DEBUG: Setting up popup variables..." | echohl None')
-        vim.command(f'let g:temp_buf_num = {temp_buf_num}')
-
-        # Execute VimScript commands step by step
-        vim.command('echohl WarningMsg | echo "DEBUG: Getting buffer lines..." | echohl None')
-        vim.command('let l:popup_content = getbufline(g:temp_buf_num, 1, "$")')
-
-        # Debug: Check the content that will be passed to popup
-        vim.command('echohl WarningMsg | echo "DEBUG: Checking popup content..." | echohl None')
-        # Skip the problematic VimScript line that causes syntax errors
+        vim_list_str = '[' + ','.join(vim_list_items) + ']'
+        vim.command(f'let l:popup_content = {vim_list_str}')
+        vim.command('echohl WarningMsg | echo "DEBUG: Popup content prepared directly from Python" | echohl None')
 
         # Check for popup support and create accordingly
         vim.command('echohl WarningMsg | echo "DEBUG: About to execute popup creation script..." | echohl None')
@@ -1277,10 +1253,8 @@ endfunction
             vim.command(f'echohl ErrorMsg | echo "DEBUG: VimScript error: {repr(str(vim_error))}" | echohl None')
             raise vim_error
 
-        # Clean up the temporary buffer
-        vim.command('echohl WarningMsg | echo "DEBUG: Cleaning up temp buffer..." | echohl None')
-        vim.command('execute "bdelete! " . g:temp_buf_num')
-        vim.command('unlet g:temp_buf_num')
+        # No cleanup needed since we're not using temporary buffers
+        vim.command('echohl WarningMsg | echo "DEBUG: No cleanup needed for direct content passing" | echohl None')
 
         vim.command('echohl WarningMsg | echo "DEBUG: dashboard_show_sql completed successfully" | echohl None')
 
