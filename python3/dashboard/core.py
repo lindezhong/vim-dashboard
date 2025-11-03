@@ -1163,18 +1163,29 @@ function! DashboardSQLPopupFilter(winid, key)
         echo "SQL content copied to clipboard!"
         return 1
     elseif a:key == "\<S-Down>"
-        " Scroll down (page down) - use win_execute to avoid popup_setoptions issues
+        " Scroll down (page down) - force preserve window attributes
         let l:opts_before = popup_getoptions(a:winid)
         echom "DEBUG: Before S-Down - pos:" . get(l:opts_before, 'pos', 'center') . " firstline:" . get(l:opts_before, 'firstline', 1) . " minwidth:" . get(l:opts_before, 'minwidth', 'auto') . " minheight:" . get(l:opts_before, 'minheight', 'auto')
         let l:current_first = get(l:opts_before, 'firstline', 1)
         echom "DEBUG: S-Down scroll from line " . l:current_first . " to " . (l:current_first + 10)
         " Use win_execute to execute scroll commands in the popup window context
         call win_execute(a:winid, 'normal! 10' . "\<C-E>")
+        " Force restore original window attributes after scrolling
+        let l:restore_opts = {
+        \   'pos': get(l:opts_before, 'pos', 'center'),
+        \   'line': get(l:opts_before, 'line', 'cursor'),
+        \   'col': get(l:opts_before, 'col', 'cursor'),
+        \   'minwidth': get(l:opts_before, 'minwidth', 60),
+        \   'minheight': get(l:opts_before, 'minheight', 10),
+        \   'maxwidth': get(l:opts_before, 'maxwidth', 60),
+        \   'maxheight': get(l:opts_before, 'maxheight', 10)
+        \ }
+        call popup_setoptions(a:winid, l:restore_opts)
         let l:opts_after = popup_getoptions(a:winid)
         echom "DEBUG: After S-Down - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
         return 1
     elseif a:key == "\<S-Up>"
-        " Scroll up (page up) - use win_execute to avoid popup_setoptions issues
+        " Scroll up (page up) - force preserve window attributes
         let l:opts_before = popup_getoptions(a:winid)
         echom "DEBUG: Before S-Up - pos:" . get(l:opts_before, 'pos', 'center') . " firstline:" . get(l:opts_before, 'firstline', 1) . " minwidth:" . get(l:opts_before, 'minwidth', 'auto') . " minheight:" . get(l:opts_before, 'minheight', 'auto')
         let l:current_first = get(l:opts_before, 'firstline', 1)
@@ -1182,22 +1193,44 @@ function! DashboardSQLPopupFilter(winid, key)
         echom "DEBUG: S-Up scroll from line " . l:current_first . " to " . l:new_first
         " Use win_execute to execute scroll commands in the popup window context
         call win_execute(a:winid, 'normal! 10' . "\<C-Y>")
+        " Force restore original window attributes after scrolling
+        let l:restore_opts = {
+        \   'pos': get(l:opts_before, 'pos', 'center'),
+        \   'line': get(l:opts_before, 'line', 'cursor'),
+        \   'col': get(l:opts_before, 'col', 'cursor'),
+        \   'minwidth': get(l:opts_before, 'minwidth', 60),
+        \   'minheight': get(l:opts_before, 'minheight', 10),
+        \   'maxwidth': get(l:opts_before, 'maxwidth', 60),
+        \   'maxheight': get(l:opts_before, 'maxheight', 10)
+        \ }
+        call popup_setoptions(a:winid, l:restore_opts)
         let l:opts_after = popup_getoptions(a:winid)
         echom "DEBUG: After S-Up - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
         return 1
     elseif a:key == "\<Down>" || a:key == 'j'
-        " Scroll down one line - use win_execute to avoid popup_setoptions issues
+        " Scroll down one line - force preserve window attributes
         let l:opts_before = popup_getoptions(a:winid)
         echom "DEBUG: Before j/Down - pos:" . get(l:opts_before, 'pos', 'center') . " firstline:" . get(l:opts_before, 'firstline', 1) . " minwidth:" . get(l:opts_before, 'minwidth', 'auto') . " minheight:" . get(l:opts_before, 'minheight', 'auto')
         let l:current_first = get(l:opts_before, 'firstline', 1)
         echom "DEBUG: j/Down scroll from line " . l:current_first . " to " . (l:current_first + 1)
         " Use win_execute to execute scroll commands in the popup window context
         call win_execute(a:winid, 'normal! ' . "\<C-E>")
+        " Force restore original window attributes after scrolling
+        let l:restore_opts = {
+        \   'pos': get(l:opts_before, 'pos', 'center'),
+        \   'line': get(l:opts_before, 'line', 'cursor'),
+        \   'col': get(l:opts_before, 'col', 'cursor'),
+        \   'minwidth': get(l:opts_before, 'minwidth', 60),
+        \   'minheight': get(l:opts_before, 'minheight', 10),
+        \   'maxwidth': get(l:opts_before, 'maxwidth', 60),
+        \   'maxheight': get(l:opts_before, 'maxheight', 10)
+        \ }
+        call popup_setoptions(a:winid, l:restore_opts)
         let l:opts_after = popup_getoptions(a:winid)
         echom "DEBUG: After j/Down - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
         return 1
     elseif a:key == "\<Up>" || a:key == 'k'
-        " Scroll up one line - use win_execute to avoid popup_setoptions issues
+        " Scroll up one line - force preserve window attributes
         let l:opts_before = popup_getoptions(a:winid)
         echom "DEBUG: Before k/Up - pos:" . get(l:opts_before, 'pos', 'center') . " firstline:" . get(l:opts_before, 'firstline', 1) . " minwidth:" . get(l:opts_before, 'minwidth', 'auto') . " minheight:" . get(l:opts_before, 'minheight', 'auto')
         let l:current_first = get(l:opts_before, 'firstline', 1)
@@ -1205,6 +1238,17 @@ function! DashboardSQLPopupFilter(winid, key)
         echom "DEBUG: k/Up scroll from line " . l:current_first . " to " . l:new_first
         " Use win_execute to execute scroll commands in the popup window context
         call win_execute(a:winid, 'normal! ' . "\<C-Y>")
+        " Force restore original window attributes after scrolling
+        let l:restore_opts = {
+        \   'pos': get(l:opts_before, 'pos', 'center'),
+        \   'line': get(l:opts_before, 'line', 'cursor'),
+        \   'col': get(l:opts_before, 'col', 'cursor'),
+        \   'minwidth': get(l:opts_before, 'minwidth', 60),
+        \   'minheight': get(l:opts_before, 'minheight', 10),
+        \   'maxwidth': get(l:opts_before, 'maxwidth', 60),
+        \   'maxheight': get(l:opts_before, 'maxheight', 10)
+        \ }
+        call popup_setoptions(a:winid, l:restore_opts)
         let l:opts_after = popup_getoptions(a:winid)
         echom "DEBUG: After k/Up - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
         return 1
