@@ -425,23 +425,21 @@ EOF
     echo "Variable type: " . l:var_type
 
     if l:var_type == 'boolean'
-      echo "Enter new value (true/false): "
+      echo "Enter new value (true/false, or empty for null): "
     elseif l:var_type == 'list'
-      echo "Enter new value (comma-separated): "
+      echo "Enter new value (comma-separated, or empty for null): "
     elseif l:var_type == 'map'
-      echo "Enter new value (key1=value1,key2=value2): "
+      echo "Enter new value (key1=value1,key2=value2, or empty for null): "
     else
-      echo "Enter new value: "
+      echo "Enter new value (or empty for null): "
     endif
 
     let l:new_value = input('')
 
-    if empty(l:new_value)
-      echom 'No value entered, operation cancelled'
-      return
-    endif
+    " Allow empty input to set variable to None/null
+    " Don't cancel operation for empty input
 
-    " Update the variable
+    " Update the variable (empty string will be handled as None in Python)
     call dashboard#update_variable(l:selected_var, l:new_value)
 
   catch
