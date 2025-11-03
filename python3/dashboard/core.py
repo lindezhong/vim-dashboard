@@ -1280,7 +1280,7 @@ EOF
                 vim.command('resize 20')
 
                 # Define VimScript functions for copying content and scrolling in fallback mode
-                vim.command('''
+                vim.command(r'''
 function! DashboardCopyAllContentFallback()
     let l:lines = getline(1, '$')
     " Skip the first 4 lines (operation keys section)
