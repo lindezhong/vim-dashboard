@@ -1089,7 +1089,7 @@ def dashboard_show_sql():
         vim.command('let l:popup_content = getbufline(g:temp_buf_num, 1, "$")')
 
         # Check for popup support and create accordingly
-        vim.command('''
+        vim.command(r'''
         if exists('*popup_create')
             " Vim 8.2+ popup
             let l:popup_opts = {
