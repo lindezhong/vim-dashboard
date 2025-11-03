@@ -1049,8 +1049,10 @@ def dashboard_show_sql():
         vim.command('echohl WarningMsg | echo "DEBUG: Preparing popup content..." | echohl None')
         sql_lines = rendered_sql.split('\n')
 
-        # Add header
+        # Add header with operation keys information at the top
         lines = [
+            "Press 'q/Esc' to quit, 'y' to copy",
+            "",
             "Dashboard Rendered SQL",
             f"Config: {os.path.basename(current_task.config_file)}",
             f"Generated at: {current_task.get_last_execution_time() or 'N/A'}",
@@ -1071,6 +1073,9 @@ def dashboard_show_sql():
 
         lines.extend(["", "Rendered SQL:"])
         lines.extend(sql_lines)
+
+        # Store the index where SQL content starts (excluding operation keys)
+        sql_content_start_index = 4  # "Dashboard Rendered SQL" line index
 
         vim.command(f'echohl WarningMsg | echo "DEBUG: Content prepared, {len(lines)} lines" | echohl None')
 
@@ -1171,23 +1176,15 @@ function! DashboardSQLPopupFilter(winid, key)
         call popup_close(a:winid)
         return 1
     elseif a:key == 'y' || a:key == "\<C-c>"
-        " Copy all content to clipboard
-        let l:content = popup_getpos(a:winid)
+        " Copy SQL content to clipboard (excluding operation keys)
         let l:bufnr = winbufnr(a:winid)
         let l:lines = getbufline(l:bufnr, 1, '$')
-        let l:text = join(l:lines, "\n")
+        " Skip the first 4 lines (operation keys section)
+        let l:sql_lines = l:lines[4:]
+        let l:text = join(l:sql_lines, "\n")
         let @+ = l:text
         let @* = l:text
         echo "SQL content copied to clipboard!"
-        return 1
-    elseif a:key == 'c'
-        " Copy current line to clipboard
-        let l:bufnr = winbufnr(a:winid)
-        let l:line_num = line('.', a:winid)
-        let l:line_text = getbufline(l:bufnr, l:line_num)[0]
-        let @+ = l:line_text
-        let @* = l:line_text
-        echo "Current line copied to clipboard!"
         return 1
     endif
     return 0
@@ -1224,25 +1221,21 @@ endfunction
                 vim.command('nnoremap <buffer> <Esc> :lua vim.api.nvim_win_close(0, true)<CR>')
                 vim.command('nnoremap <buffer> y :lua DashboardCopyAllContent()<CR>')
                 vim.command('nnoremap <buffer> <C-c> :lua DashboardCopyAllContent()<CR>')
-                vim.command('nnoremap <buffer> c :lua DashboardCopyCurrentLine()<CR>')
 
                 # Define Lua functions for copying content
                 vim.command('''
 lua << EOF
 function DashboardCopyAllContent()
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-    local text = table.concat(lines, "\n")
+    -- Skip the first 4 lines (operation keys section)
+    local sql_lines = {}
+    for i = 5, #lines do
+        table.insert(sql_lines, lines[i])
+    end
+    local text = table.concat(sql_lines, "\n")
     vim.fn.setreg('+', text)
     vim.fn.setreg('*', text)
     print("SQL content copied to clipboard!")
-end
-
-function DashboardCopyCurrentLine()
-    local line_num = vim.api.nvim_win_get_cursor(0)[1]
-    local line_text = vim.api.nvim_buf_get_lines(0, line_num - 1, line_num, false)[1]
-    vim.fn.setreg('+', line_text)
-    vim.fn.setreg('*', line_text)
-    print("Current line copied to clipboard!")
 end
 EOF
                 ''')
@@ -1259,7 +1252,6 @@ EOF
                 vim.command('nnoremap <buffer> <Esc> :quit<CR>')
                 vim.command('nnoremap <buffer> y :call DashboardCopyAllContentFallback()<CR>')
                 vim.command('nnoremap <buffer> <C-c> :call DashboardCopyAllContentFallback()<CR>')
-                vim.command('nnoremap <buffer> c :call DashboardCopyCurrentLineFallback()<CR>')
 
                 vim.command('resize 20')
 
@@ -1267,24 +1259,19 @@ EOF
                 vim.command('''
 function! DashboardCopyAllContentFallback()
     let l:lines = getline(1, '$')
-    let l:text = join(l:lines, "\n")
+    " Skip the first 4 lines (operation keys section)
+    let l:sql_lines = l:lines[4:]
+    let l:text = join(l:sql_lines, "\n")
     let @+ = l:text
     let @* = l:text
     echo "SQL content copied to clipboard!"
-endfunction
-
-function! DashboardCopyCurrentLineFallback()
-    let l:line_text = getline('.')
-    let @+ = l:line_text
-    let @* = l:line_text
-    echo "Current line copied to clipboard!"
 endfunction
                 ''')
 
             vim.command('echohl WarningMsg | echo "DEBUG: Popup creation completed successfully" | echohl None')
 
             # Show help message for all popup types
-            vim.command('echohl MoreMsg | echo "SQL Popup Help: q/Esc=Close, y/Ctrl-c=Copy All, c=Copy Line" | echohl None')
+            vim.command('echohl MoreMsg | echo "SQL Popup Help: q/Esc=Close, y/Ctrl-c=Copy SQL Content" | echohl None')
 
         except Exception as vim_error:
             vim.command(f'echohl ErrorMsg | echo "DEBUG: VimScript error: {repr(str(vim_error))}" | echohl None')
