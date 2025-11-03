@@ -1033,23 +1033,16 @@ def dashboard_show_sql():
             vim.command('echohl WarningMsg | echo "No SQL found for current dashboard" | echohl None')
             return
 
-        # Display SQL in a new buffer
-        vim.command('new')
-        vim.command('setlocal buftype=nofile')
-        vim.command('setlocal noswapfile')
-        vim.command('setlocal readonly')
-        vim.command('setlocal filetype=sql')
-
-        # Split SQL into lines for better display
+        # Prepare SQL content for popup display
         sql_lines = rendered_sql.split('\n')
 
         # Add header
         lines = [
-            "-- Dashboard Rendered SQL",
-            f"-- Config: {os.path.basename(current_task.config_file)}",
-            f"-- Generated at: {current_task.get_last_execution_time() or 'N/A'}",
+            "Dashboard Rendered SQL",
+            f"Config: {os.path.basename(current_task.config_file)}",
+            f"Generated at: {current_task.get_last_execution_time() or 'N/A'}",
             "",
-            "-- Variables used:",
+            "Variables used:",
         ]
 
         # Add variables info
@@ -1057,20 +1050,83 @@ def dashboard_show_sql():
         if variables_info:
             for var_name, var_info in variables_info.items():
                 current_value = var_info.get('current_value', var_info.get('default_value', ''))
-                lines.append(f"-- {var_name}: {current_value}")
+                lines.append(f"{var_name}: {current_value}")
         else:
-            lines.append("-- No variables defined")
+            lines.append("No variables defined")
 
-        lines.extend(["", "-- Rendered SQL:"])
+        lines.extend(["", "Rendered SQL:"])
         lines.extend(sql_lines)
 
-        vim.current.buffer[:] = lines
+        # Calculate popup dimensions
+        max_width = max(len(line) for line in lines) + 4
+        max_height = min(len(lines) + 2, 30)  # Limit height to 30 lines
 
-        # Set up key mappings for SQL buffer
-        vim.command('nnoremap <buffer> q :quit<CR>')
-        vim.command('nnoremap <buffer> <silent> r :python3 import dashboard.core; dashboard.core.dashboard_show_sql()<CR>')
+        # Ensure minimum dimensions
+        popup_width = max(max_width, 60)
+        popup_height = max(max_height, 10)
 
-        vim.command('echohl MoreMsg | echo "SQL displayed. Press q to close, r to refresh" | echohl None')
+        # Create popup using Vim's popup functionality
+        # First, pass the content to Vim
+        import json
+        content_json = json.dumps(lines).replace('"', '\\"')
+
+        vim.command(f'''
+        let l:popup_content = {content_json}
+        let l:popup_opts = {{
+            \\ 'title': ' SQL Query ',
+            \\ 'wrap': 1,
+            \\ 'scrollbar': 1,
+            \\ 'resize': 1,
+            \\ 'close': 'button',
+            \\ 'border': [],
+            \\ 'borderchars': ['─', '│', '─', '│', '┌', '┐', '┘', '└'],
+            \\ 'minwidth': 60,
+            \\ 'maxwidth': 120,
+            \\ 'minheight': 10,
+            \\ 'maxheight': 30,
+            \\ 'pos': 'center',
+            \\ 'mapping': 0,
+            \\ 'filter': 'dashboard#sql_popup_filter',
+            \\ 'callback': 'dashboard#sql_popup_callback'
+        \\}}
+
+        if exists('*popup_create')
+            " Vim 8.2+ popup
+            let g:dashboard_sql_popup_id = popup_create(l:popup_content, l:popup_opts)
+            call popup_setoptions(g:dashboard_sql_popup_id, {{'filetype': 'sql'}})
+        elseif exists('*nvim_open_win')
+            " Neovim floating window
+            let l:buf = nvim_create_buf(v:false, v:true)
+            call nvim_buf_set_lines(l:buf, 0, -1, v:true, l:popup_content)
+            call nvim_buf_set_option(l:buf, 'filetype', 'sql')
+            call nvim_buf_set_option(l:buf, 'modifiable', v:false)
+
+            let l:width = min([max([max(map(copy(l:popup_content), 'len(v:val)')) + 4, 60]), 120])
+            let l:height = min([len(l:popup_content) + 2, 30])
+
+            let l:opts = {{
+                \\ 'relative': 'editor',
+                \\ 'width': l:width,
+                \\ 'height': l:height,
+                \\ 'col': (&columns - l:width) / 2,
+                \\ 'row': (&lines - l:height) / 2,
+                \\ 'anchor': 'NW',
+                \\ 'style': 'minimal',
+                \\ 'border': 'rounded'
+            \\}}
+
+            let g:dashboard_sql_popup_id = nvim_open_win(l:buf, v:true, l:opts)
+            nnoremap <buffer> q :lua vim.api.nvim_win_close(0, true)<CR>
+            nnoremap <buffer> <Esc> :lua vim.api.nvim_win_close(0, true)<CR>
+        else
+            " Fallback to split window for older versions
+            new
+            setlocal buftype=nofile noswapfile readonly filetype=sql
+            call setline(1, l:popup_content)
+            nnoremap <buffer> q :quit<CR>
+            resize {popup_height}
+        endif
+        ''')
 
     except Exception as e:
         error_msg = format_error_message(e, "Show SQL")

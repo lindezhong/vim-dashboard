@@ -606,3 +606,47 @@ EOF
     echohl None
   endtry
 endfunction
+
+" Popup filter function for SQL popup
+function! dashboard#sql_popup_filter(winid, key)
+  " Handle key presses in the SQL popup
+  if a:key ==# 'q' || a:key ==# "\<Esc>"
+    call popup_close(a:winid)
+    return 1
+  elseif a:key ==# 'r'
+    " Refresh SQL
+    call popup_close(a:winid)
+    call dashboard#show_sql()
+    return 1
+  elseif a:key ==# 'j' || a:key ==# "\<Down>"
+    call win_execute(a:winid, "normal! j")
+    return 1
+  elseif a:key ==# 'k' || a:key ==# "\<Up>"
+    call win_execute(a:winid, "normal! k")
+    return 1
+  elseif a:key ==# 'g'
+    call win_execute(a:winid, "normal! gg")
+    return 1
+  elseif a:key ==# 'G'
+    call win_execute(a:winid, "normal! G")
+    return 1
+  elseif a:key ==# "\<C-d>"
+    call win_execute(a:winid, "normal! \<C-d>")
+    return 1
+  elseif a:key ==# "\<C-u>"
+    call win_execute(a:winid, "normal! \<C-u>")
+    return 1
+  endif
+
+  " Let other keys pass through
+  return 0
+endfunction
+
+" Popup callback function for SQL popup
+function! dashboard#sql_popup_callback(winid, result)
+  " Called when popup is closed
+  " Clean up any global variables if needed
+  if exists('g:dashboard_sql_popup_id')
+    unlet g:dashboard_sql_popup_id
+  endif
+endfunction
