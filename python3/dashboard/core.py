@@ -1266,26 +1266,38 @@ function DashboardScrollDown(lines)
     -- Use Ctrl+E to scroll down without moving cursor or changing window
     local win = vim.api.nvim_get_current_win()
     local win_config_before = vim.api.nvim_win_get_config(win)
-    print("DEBUG: Neovim Before scroll down - row:" .. (win_config_before.row or 'none') .. " col:" .. (win_config_before.col or 'none') .. " width:" .. (win_config_before.width or 'none') .. " height:" .. (win_config_before.height or 'none'))
+    local win_height_before = vim.api.nvim_win_get_height(win)
+    local win_width_before = vim.api.nvim_win_get_width(win)
+    local win_pos_before = vim.api.nvim_win_get_position(win)
+    print("DEBUG: Neovim Before scroll down - pos:" .. (win_config_before.relative or 'normal') .. " row:" .. win_pos_before[1] .. " col:" .. win_pos_before[2] .. " width:" .. win_width_before .. " height:" .. win_height_before)
     print("DEBUG: Neovim scroll down " .. lines .. " lines")
     for i = 1, lines do
         vim.cmd('normal! \\<C-e>')
     end
     local win_config_after = vim.api.nvim_win_get_config(win)
-    print("DEBUG: Neovim After scroll down - row:" .. (win_config_after.row or 'none') .. " col:" .. (win_config_after.col or 'none') .. " width:" .. (win_config_after.width or 'none') .. " height:" .. (win_config_after.height or 'none'))
+    local win_height_after = vim.api.nvim_win_get_height(win)
+    local win_width_after = vim.api.nvim_win_get_width(win)
+    local win_pos_after = vim.api.nvim_win_get_position(win)
+    print("DEBUG: Neovim After scroll down - pos:" .. (win_config_after.relative or 'normal') .. " row:" .. win_pos_after[1] .. " col:" .. win_pos_after[2] .. " width:" .. win_width_after .. " height:" .. win_height_after)
 end
 
 function DashboardScrollUp(lines)
     -- Use Ctrl+Y to scroll up without moving cursor or changing window
     local win = vim.api.nvim_get_current_win()
     local win_config_before = vim.api.nvim_win_get_config(win)
-    print("DEBUG: Neovim Before scroll up - row:" .. (win_config_before.row or 'none') .. " col:" .. (win_config_before.col or 'none') .. " width:" .. (win_config_before.width or 'none') .. " height:" .. (win_config_before.height or 'none'))
+    local win_height_before = vim.api.nvim_win_get_height(win)
+    local win_width_before = vim.api.nvim_win_get_width(win)
+    local win_pos_before = vim.api.nvim_win_get_position(win)
+    print("DEBUG: Neovim Before scroll up - pos:" .. (win_config_before.relative or 'normal') .. " row:" .. win_pos_before[1] .. " col:" .. win_pos_before[2] .. " width:" .. win_width_before .. " height:" .. win_height_before)
     print("DEBUG: Neovim scroll up " .. lines .. " lines")
     for i = 1, lines do
         vim.cmd('normal! \\<C-y>')
     end
     local win_config_after = vim.api.nvim_win_get_config(win)
-    print("DEBUG: Neovim After scroll up - row:" .. (win_config_after.row or 'none') .. " col:" .. (win_config_after.col or 'none') .. " width:" .. (win_config_after.width or 'none') .. " height:" .. (win_config_after.height or 'none'))
+    local win_height_after = vim.api.nvim_win_get_height(win)
+    local win_width_after = vim.api.nvim_win_get_width(win)
+    local win_pos_after = vim.api.nvim_win_get_position(win)
+    print("DEBUG: Neovim After scroll up - pos:" .. (win_config_after.relative or 'normal') .. " row:" .. win_pos_after[1] .. " col:" .. win_pos_after[2] .. " width:" .. win_width_after .. " height:" .. win_height_after)
 end
 EOF
                 ''')
