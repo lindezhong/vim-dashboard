@@ -1051,7 +1051,7 @@ def dashboard_show_sql():
 
         # Add header with operation keys information at the top
         lines = [
-            "Press 'q/Esc' to quit, 'y' to copy",
+            "Press 'q/Esc' to quit, 'y' to copy, 'Shift+Down/Up' to scroll",
             "",
             "Dashboard Rendered SQL",
             f"Config: {os.path.basename(current_task.config_file)}",
@@ -1162,6 +1162,26 @@ function! DashboardSQLPopupFilter(winid, key)
         let @* = l:text
         echo "SQL content copied to clipboard!"
         return 1
+    elseif a:key == "\<S-Down>"
+        " Scroll down (page down)
+        call popup_setoptions(a:winid, {'firstline': popup_getoptions(a:winid).firstline + 10})
+        return 1
+    elseif a:key == "\<S-Up>"
+        " Scroll up (page up)
+        let l:current_first = popup_getoptions(a:winid).firstline
+        let l:new_first = max([1, l:current_first - 10])
+        call popup_setoptions(a:winid, {'firstline': l:new_first})
+        return 1
+    elseif a:key == "\<Down>" || a:key == 'j'
+        " Scroll down one line
+        call popup_setoptions(a:winid, {'firstline': popup_getoptions(a:winid).firstline + 1})
+        return 1
+    elseif a:key == "\<Up>" || a:key == 'k'
+        " Scroll up one line
+        let l:current_first = popup_getoptions(a:winid).firstline
+        let l:new_first = max([1, l:current_first - 1])
+        call popup_setoptions(a:winid, {'firstline': l:new_first})
+        return 1
     endif
     return 0
 endfunction
@@ -1197,8 +1217,14 @@ endfunction
                 vim.command('nnoremap <buffer> <Esc> :lua vim.api.nvim_win_close(0, true)<CR>')
                 vim.command('nnoremap <buffer> y :lua DashboardCopyAllContent()<CR>')
                 vim.command('nnoremap <buffer> <C-c> :lua DashboardCopyAllContent()<CR>')
+                vim.command('nnoremap <buffer> <S-Down> :lua DashboardScrollDown(10)<CR>')
+                vim.command('nnoremap <buffer> <S-Up> :lua DashboardScrollUp(10)<CR>')
+                vim.command('nnoremap <buffer> <Down> :lua DashboardScrollDown(1)<CR>')
+                vim.command('nnoremap <buffer> <Up> :lua DashboardScrollUp(1)<CR>')
+                vim.command('nnoremap <buffer> j :lua DashboardScrollDown(1)<CR>')
+                vim.command('nnoremap <buffer> k :lua DashboardScrollUp(1)<CR>')
 
-                # Define Lua functions for copying content
+                # Define Lua functions for copying content and scrolling
                 vim.command('''
 lua << EOF
 function DashboardCopyAllContent()
@@ -1212,6 +1238,33 @@ function DashboardCopyAllContent()
     vim.fn.setreg('+', text)
     vim.fn.setreg('*', text)
     print("SQL content copied to clipboard!")
+end
+
+function DashboardScrollDown(lines)
+    local win = vim.api.nvim_get_current_win()
+    local buf = vim.api.nvim_win_get_buf(win)
+    local total_lines = vim.api.nvim_buf_line_count(buf)
+    local win_height = vim.api.nvim_win_get_height(win)
+
+    -- Get current top line
+    local current_top = vim.fn.line('w0')
+    local new_top = math.min(current_top + lines, math.max(1, total_lines - win_height + 1))
+
+    -- Set cursor to new top line
+    vim.api.nvim_win_set_cursor(win, {new_top, 0})
+    vim.cmd('normal! zt')
+end
+
+function DashboardScrollUp(lines)
+    local win = vim.api.nvim_get_current_win()
+
+    -- Get current top line
+    local current_top = vim.fn.line('w0')
+    local new_top = math.max(1, current_top - lines)
+
+    -- Set cursor to new top line
+    vim.api.nvim_win_set_cursor(win, {new_top, 0})
+    vim.cmd('normal! zt')
 end
 EOF
                 ''')
@@ -1228,10 +1281,16 @@ EOF
                 vim.command('nnoremap <buffer> <Esc> :quit<CR>')
                 vim.command('nnoremap <buffer> y :call DashboardCopyAllContentFallback()<CR>')
                 vim.command('nnoremap <buffer> <C-c> :call DashboardCopyAllContentFallback()<CR>')
+                vim.command('nnoremap <buffer> <S-Down> :call DashboardScrollDownFallback(10)<CR>')
+                vim.command('nnoremap <buffer> <S-Up> :call DashboardScrollUpFallback(10)<CR>')
+                vim.command('nnoremap <buffer> <Down> :call DashboardScrollDownFallback(1)<CR>')
+                vim.command('nnoremap <buffer> <Up> :call DashboardScrollUpFallback(1)<CR>')
+                vim.command('nnoremap <buffer> j :call DashboardScrollDownFallback(1)<CR>')
+                vim.command('nnoremap <buffer> k :call DashboardScrollUpFallback(1)<CR>')
 
                 vim.command('resize 20')
 
-                # Define VimScript functions for copying content in fallback mode
+                # Define VimScript functions for copying content and scrolling in fallback mode
                 vim.command('''
 function! DashboardCopyAllContentFallback()
     let l:lines = getline(1, '$')
@@ -1242,12 +1301,38 @@ function! DashboardCopyAllContentFallback()
     let @* = l:text
     echo "SQL content copied to clipboard!"
 endfunction
+
+function! DashboardScrollDownFallback(lines)
+    let l:current_line = line('.')
+    let l:total_lines = line('$')
+    let l:win_height = winheight(0)
+    let l:new_line = min([l:current_line + a:lines, l:total_lines])
+    execute 'normal! ' . l:new_line . 'G'
+
+    " Adjust window position if needed
+    let l:top_line = line('w0')
+    if l:new_line > l:top_line + l:win_height - 3
+        execute 'normal! zt'
+    endif
+endfunction
+
+function! DashboardScrollUpFallback(lines)
+    let l:current_line = line('.')
+    let l:new_line = max([1, l:current_line - a:lines])
+    execute 'normal! ' . l:new_line . 'G'
+
+    " Adjust window position if needed
+    let l:top_line = line('w0')
+    if l:new_line < l:top_line + 2
+        execute 'normal! zt'
+    endif
+endfunction
                 ''')
 
             vim.command('echohl WarningMsg | echo "DEBUG: Popup creation completed successfully" | echohl None')
 
             # Show help message for all popup types
-            vim.command('echohl MoreMsg | echo "SQL Popup Help: q/Esc=Close, y/Ctrl-c=Copy SQL Content" | echohl None')
+            vim.command('echohl MoreMsg | echo "SQL Popup Help: q/Esc=Close, y/Ctrl-c=Copy, Shift+Down/Up=Page, j/k/Down/Up=Line" | echohl None')
 
         except Exception as vim_error:
             vim.command(f'echohl ErrorMsg | echo "DEBUG: VimScript error: {repr(str(vim_error))}" | echohl None')
