@@ -1136,23 +1136,23 @@ def dashboard_show_sql():
 
             if popup_type == "vim":
                 vim.command('echohl WarningMsg | echo "DEBUG: Creating Vim popup..." | echohl None')
-                vim.command(r'''
-                let l:popup_opts = {
-                    \ 'title': ' SQL Query ',
-                    \ 'wrap': 1,
-                    \ 'scrollbar': 1,
-                    \ 'resize': 1,
-                    \ 'close': 'button',
-                    \ 'border': [],
-                    \ 'borderchars': ['─', '│', '─', '│', '┌', '┐', '┘', '└'],
-                    \ 'minwidth': 60,
-                    \ 'maxwidth': 120,
-                    \ 'minheight': 10,
-                    \ 'maxheight': 30,
-                    \ 'pos': 'center',
-                    \ 'mapping': 0
-                \ }
-                ''')
+
+                # Use individual commands to avoid complex string escaping
+                vim.command('let l:popup_opts = {}')
+                vim.command("let l:popup_opts['title'] = ' SQL Query '")
+                vim.command("let l:popup_opts['wrap'] = 1")
+                vim.command("let l:popup_opts['scrollbar'] = 1")
+                vim.command("let l:popup_opts['resize'] = 1")
+                vim.command("let l:popup_opts['close'] = 'button'")
+                vim.command("let l:popup_opts['border'] = []")
+                vim.command("let l:popup_opts['borderchars'] = ['─', '│', '─', '│', '┌', '┐', '┘', '└']")
+                vim.command("let l:popup_opts['minwidth'] = 60")
+                vim.command("let l:popup_opts['maxwidth'] = 120")
+                vim.command("let l:popup_opts['minheight'] = 10")
+                vim.command("let l:popup_opts['maxheight'] = 30")
+                vim.command("let l:popup_opts['pos'] = 'center'")
+                vim.command("let l:popup_opts['mapping'] = 0")
+
                 vim.command('echohl WarningMsg | echo "DEBUG: Popup options created" | echohl None')
 
                 vim.command('let g:dashboard_sql_popup_id = popup_create(l:popup_content, l:popup_opts)')
@@ -1163,39 +1163,39 @@ def dashboard_show_sql():
 
             elif popup_type == "nvim":
                 vim.command('echohl WarningMsg | echo "DEBUG: Creating Neovim floating window..." | echohl None')
-                vim.command(r'''
-                let l:buf = nvim_create_buf(v:false, v:true)
-                call nvim_buf_set_lines(l:buf, 0, -1, v:true, l:popup_content)
-                call nvim_buf_set_option(l:buf, 'filetype', 'sql')
-                call nvim_buf_set_option(l:buf, 'modifiable', v:false)
 
-                let l:width = min([max([max(map(copy(l:popup_content), 'len(v:val)')) + 4, 60]), 120])
-                let l:height = min([len(l:popup_content) + 2, 30])
+                # Use individual commands to avoid complex string escaping
+                vim.command('let l:buf = nvim_create_buf(v:false, v:true)')
+                vim.command('call nvim_buf_set_lines(l:buf, 0, -1, v:true, l:popup_content)')
+                vim.command("call nvim_buf_set_option(l:buf, 'filetype', 'sql')")
+                vim.command("call nvim_buf_set_option(l:buf, 'modifiable', v:false)")
 
-                let l:opts = {
-                    \ 'relative': 'editor',
-                    \ 'width': l:width,
-                    \ 'height': l:height,
-                    \ 'col': (&columns - l:width) / 2,
-                    \ 'row': (&lines - l:height) / 2,
-                    \ 'anchor': 'NW',
-                    \ 'style': 'minimal',
-                    \ 'border': 'rounded'
-                \ }
+                vim.command("let l:width = min([max([max(map(copy(l:popup_content), 'len(v:val)')) + 4, 60]), 120])")
+                vim.command('let l:height = min([len(l:popup_content) + 2, 30])')
 
-                let g:dashboard_sql_popup_id = nvim_open_win(l:buf, v:true, l:opts)
-                nnoremap <buffer> q :lua vim.api.nvim_win_close(0, true)<CR>
-                nnoremap <buffer> <Esc> :lua vim.api.nvim_win_close(0, true)<CR>
-                ''')
+                # Create options dictionary step by step
+                vim.command('let l:opts = {}')
+                vim.command("let l:opts['relative'] = 'editor'")
+                vim.command("let l:opts['width'] = l:width")
+                vim.command("let l:opts['height'] = l:height")
+                vim.command("let l:opts['col'] = (&columns - l:width) / 2")
+                vim.command("let l:opts['row'] = (&lines - l:height) / 2")
+                vim.command("let l:opts['anchor'] = 'NW'")
+                vim.command("let l:opts['style'] = 'minimal'")
+                vim.command("let l:opts['border'] = 'rounded'")
+
+                vim.command('let g:dashboard_sql_popup_id = nvim_open_win(l:buf, v:true, l:opts)')
+                vim.command('nnoremap <buffer> q :lua vim.api.nvim_win_close(0, true)<CR>')
+                vim.command('nnoremap <buffer> <Esc> :lua vim.api.nvim_win_close(0, true)<CR>')
             else:
                 vim.command('echohl WarningMsg | echo "DEBUG: Using fallback split window..." | echohl None')
-                vim.command(r'''
-                new
-                setlocal buftype=nofile noswapfile readonly filetype=sql
-                call setline(1, l:popup_content)
-                nnoremap <buffer> q :quit<CR>
-                resize 20
-                ''')
+
+                # Use individual commands to avoid complex string escaping
+                vim.command('new')
+                vim.command('setlocal buftype=nofile noswapfile readonly filetype=sql')
+                vim.command('call setline(1, l:popup_content)')
+                vim.command('nnoremap <buffer> q :quit<CR>')
+                vim.command('resize 20')
 
             vim.command('echohl WarningMsg | echo "DEBUG: Popup creation completed successfully" | echohl None')
 
