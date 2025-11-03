@@ -775,19 +775,19 @@ function! dashboard#auto_start_from_dashboard_file()
     return
   endif
 
-  " Extract the base name without .dashboard extension
-  let l:base_name = fnamemodify(l:dashboard_file, ':r')
+  " Extract the base name without .dashboard extension and path
+  let l:file_name = fnamemodify(l:dashboard_file, ':t:r')
 
-  " Look for corresponding .yaml config file in the same directory
-  let l:config_file = l:base_name . '.yaml'
+  " Look for corresponding .yaml config file in current working directory
+  let l:config_file = getcwd() . '/' . l:file_name . '.yaml'
 
   " Check if the config file exists
   if !filereadable(l:config_file)
     " Try .yml extension as fallback
-    let l:config_file = l:base_name . '.yml'
+    let l:config_file = getcwd() . '/' . l:file_name . '.yml'
     if !filereadable(l:config_file)
       echohl WarningMsg
-      echom 'Dashboard config file not found: ' . l:base_name . '.yaml or ' . l:base_name . '.yml'
+      echom 'Dashboard config file not found: ' . getcwd() . '/' . l:file_name . '.yaml or ' . getcwd() . '/' . l:file_name . '.yml'
       echohl None
       return
     endif
