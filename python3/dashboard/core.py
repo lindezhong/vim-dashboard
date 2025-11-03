@@ -1163,22 +1163,24 @@ function! DashboardSQLPopupFilter(winid, key)
         echo "SQL content copied to clipboard!"
         return 1
     elseif a:key == "\<S-Down>"
-        " Scroll down (page down)
-        call popup_setoptions(a:winid, {'firstline': popup_getoptions(a:winid).firstline + 10})
+        " Scroll down (page down) - use popup_setoptions with only firstline to avoid position changes
+        let l:current_first = get(popup_getoptions(a:winid), 'firstline', 1)
+        call popup_setoptions(a:winid, {'firstline': l:current_first + 10})
         return 1
     elseif a:key == "\<S-Up>"
-        " Scroll up (page up)
-        let l:current_first = popup_getoptions(a:winid).firstline
+        " Scroll up (page up) - use popup_setoptions with only firstline to avoid position changes
+        let l:current_first = get(popup_getoptions(a:winid), 'firstline', 1)
         let l:new_first = max([1, l:current_first - 10])
         call popup_setoptions(a:winid, {'firstline': l:new_first})
         return 1
     elseif a:key == "\<Down>" || a:key == 'j'
-        " Scroll down one line
-        call popup_setoptions(a:winid, {'firstline': popup_getoptions(a:winid).firstline + 1})
+        " Scroll down one line - use popup_setoptions with only firstline to avoid position changes
+        let l:current_first = get(popup_getoptions(a:winid), 'firstline', 1)
+        call popup_setoptions(a:winid, {'firstline': l:current_first + 1})
         return 1
     elseif a:key == "\<Up>" || a:key == 'k'
-        " Scroll up one line
-        let l:current_first = popup_getoptions(a:winid).firstline
+        " Scroll up one line - use popup_setoptions with only firstline to avoid position changes
+        let l:current_first = get(popup_getoptions(a:winid), 'firstline', 1)
         let l:new_first = max([1, l:current_first - 1])
         call popup_setoptions(a:winid, {'firstline': l:new_first})
         return 1
@@ -1241,37 +1243,16 @@ function DashboardCopyAllContent()
 end
 
 function DashboardScrollDown(lines)
-    local win = vim.api.nvim_get_current_win()
-    local buf = vim.api.nvim_win_get_buf(win)
-    local total_lines = vim.api.nvim_buf_line_count(buf)
-    local win_height = vim.api.nvim_win_get_height(win)
-
-    -- Get current top line
-    local current_top = vim.fn.line('w0')
-    local new_top = math.min(current_top + lines, math.max(1, total_lines - win_height + 1))
-
     -- Use Ctrl+E to scroll down without moving cursor or changing window
-    if new_top > current_top then
-        local scroll_lines = new_top - current_top
-        for i = 1, scroll_lines do
-            vim.cmd('normal! \\<C-e>')
-        end
+    for i = 1, lines do
+        vim.cmd('normal! \<C-e>')
     end
 end
 
 function DashboardScrollUp(lines)
-    local win = vim.api.nvim_get_current_win()
-
-    -- Get current top line
-    local current_top = vim.fn.line('w0')
-    local new_top = math.max(1, current_top - lines)
-
     -- Use Ctrl+Y to scroll up without moving cursor or changing window
-    if new_top < current_top then
-        local scroll_lines = current_top - new_top
-        for i = 1, scroll_lines do
-            vim.cmd('normal! \\<C-y>')
-        end
+    for i = 1, lines do
+        vim.cmd('normal! \<C-y>')
     end
 end
 EOF
@@ -1311,35 +1292,21 @@ function! DashboardCopyAllContentFallback()
 endfunction
 
 function! DashboardScrollDownFallback(lines)
-    let l:current_top = line('w0')
-    let l:total_lines = line('$')
-    let l:win_height = winheight(0)
-    let l:new_top = min([l:current_top + a:lines, max([1, l:total_lines - l:win_height + 1])])
-
     " Use Ctrl+E to scroll down without changing window size/position
-    if l:new_top > l:current_top
-        let l:scroll_lines = l:new_top - l:current_top
-        let l:i = 0
-        while l:i < l:scroll_lines
-            execute "normal! \<C-e>"
-            let l:i = l:i + 1
-        endwhile
-    endif
+    let l:i = 0
+    while l:i < a:lines
+        execute "normal! \<C-e>"
+        let l:i = l:i + 1
+    endwhile
 endfunction
 
 function! DashboardScrollUpFallback(lines)
-    let l:current_top = line('w0')
-    let l:new_top = max([1, l:current_top - a:lines])
-
     " Use Ctrl+Y to scroll up without changing window size/position
-    if l:new_top < l:current_top
-        let l:scroll_lines = l:current_top - l:new_top
-        let l:i = 0
-        while l:i < l:scroll_lines
-            execute "normal! \<C-y>"
-            let l:i = l:i + 1
-        endwhile
-    endif
+    let l:i = 0
+    while l:i < a:lines
+        execute "normal! \<C-y>"
+        let l:i = l:i + 1
+    endwhile
 endfunction
                 ''')
 
