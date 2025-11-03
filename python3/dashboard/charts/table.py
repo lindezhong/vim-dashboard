@@ -231,6 +231,34 @@ class TableChart(BaseChart):
             table.caption = caption
             table.caption_style = self.style.get('caption_style', 'italic')
 
+    def _handle_empty_data(self) -> str:
+        """Handle case when no data is available for table - show headers with empty message."""
+        columns_info = self._get_columns_info()
+
+        if not columns_info:
+            # If no column info available, fall back to base class behavior
+            return super()._handle_empty_data()
+
+        # Create Rich table with headers
+        table = self._create_rich_table()
+
+        # Add columns
+        self._add_columns_to_table(table, columns_info)
+
+        # Add a single row with "No data available" message
+        no_data_msg = "No data available"
+        empty_row = [no_data_msg] + [''] * (len(columns_info) - 1)
+        table.add_row(*empty_row, style='dim italic')
+
+        # Add caption if configured
+        self._add_caption_if_configured(table)
+
+        # Render to string
+        with self.console.capture() as capture:
+            self.console.print(table)
+
+        return capture.get()
+
     def render(self) -> str:
         """Render table chart."""
         columns_info = self._get_columns_info()
@@ -250,14 +278,8 @@ class TableChart(BaseChart):
         # Add columns
         self._add_columns_to_table(table, columns_info)
 
-        # Add rows - even if no data, still show table with headers
-        if paginated_data:
-            self._add_rows_to_table(table, columns_info, paginated_data)
-        else:
-            # Add a single row with "No data available" message
-            no_data_msg = "No data available"
-            empty_row = [no_data_msg] + [''] * (len(columns_info) - 1)
-            table.add_row(*empty_row, style='dim italic')
+        # Add rows
+        self._add_rows_to_table(table, columns_info, paginated_data)
 
         # Add caption if configured
         self._add_caption_if_configured(table)
