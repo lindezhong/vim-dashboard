@@ -78,12 +78,39 @@ class DashboardTask:
                 new_value = str(new_value).lower() in ('true', '1', 'yes', 'on')
             elif var_type == 'list':
                 if isinstance(new_value, str):
-                    # Parse comma-separated values
-                    new_value = [item.strip() for item in new_value.split(',')]
+                    # Try to parse as JSON first, then fall back to comma-separated
+                    import json
+                    try:
+                        new_value = json.loads(new_value)
+                        if not isinstance(new_value, list):
+                            raise ValueError("Parsed value is not a list")
+                    except (json.JSONDecodeError, ValueError):
+                        # Fall back to comma-separated parsing
+                        new_value = [item.strip() for item in new_value.split(',')]
+                        # Try to convert numeric strings to numbers
+                        converted_list = []
+                        for item in new_value:
+                            try:
+                                # Try to convert to int first, then float
+                                if '.' in item:
+                                    converted_list.append(float(item))
+                                else:
+                                    converted_list.append(int(item))
+                            except ValueError:
+                                # Keep as string if not a number
+                                converted_list.append(item)
+                        new_value = converted_list
             elif var_type == 'map':
                 if isinstance(new_value, str):
-                    # Simple key=value parsing (basic implementation)
-                    new_value = dict(item.split('=', 1) for item in new_value.split(',') if '=' in item)
+                    # Try to parse as JSON first, then fall back to key=value parsing
+                    import json
+                    try:
+                        new_value = json.loads(new_value)
+                        if not isinstance(new_value, dict):
+                            raise ValueError("Parsed value is not a dictionary")
+                    except (json.JSONDecodeError, ValueError):
+                        # Fall back to key=value parsing
+                        new_value = dict(item.split('=', 1) for item in new_value.split(',') if '=' in item)
             # string type needs no conversion
 
             self.runtime_variables[var_name] = new_value
