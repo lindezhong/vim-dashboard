@@ -258,7 +258,7 @@ class DashboardCore:
                             vim.command(f'silent! bwipeout {current_buffer_number}')
 
                             # Final focus enforcement - find and switch to dashboard window
-                            vim.command('''
+                            vim.command(r'''
 for i in range(1, winnr("$") + 1)
   let ft = getwinvar(i, "&filetype")
   if ft == "dashboard"
@@ -275,7 +275,7 @@ endfor
                             vim.command('wincmd l')  # Go back to right window again
 
                             # Force focus using window ID
-                            vim.command('''
+                            vim.command(r'''
 let dashboard_win_id = 0
 for i in range(1, winnr("$") + 1)
   if getwinvar(i, "&filetype") == "dashboard"
@@ -289,7 +289,7 @@ endif
 ''')
 
                             # Ultimate focus enforcement function
-                            vim.command('''
+                            vim.command(r'''
 function! UltimateFocusEnforcement()
   for i in range(1, winnr("$") + 1)
     if getwinvar(i, "&filetype") == "dashboard"
@@ -315,7 +315,7 @@ call UltimateFocusEnforcement()
                             vim.command("call feedkeys(\"\\<C-w>l\", 'n')")
 
                             # Force focus using autocmd
-                            vim.command('''
+                            vim.command(r'''
 augroup DashboardFocus
   autocmd!
   autocmd CursorMoved * if &filetype == "dashboard" | set cursorline | endif
@@ -357,7 +357,7 @@ augroup END
             vim.command(f'silent! bwipeout {temp_file_normalized}')
 
             # Check all windows to see if the file is still open
-            vim.command('''
+            vim.command(r'''
 let g:dashboard_file_closed = 1
 for i in range(1, winnr("$"))
   let bufname = bufname(winbufnr(i))
