@@ -500,8 +500,8 @@ function! dashboard#setup_dashboard_buffer()
     let b:dashboard_file_path = l:current_file
 
     " Set up buffer-local key mappings for variable interaction
-    nnoremap <buffer> <silent> v :call dashboard#modify_variable()<CR>
-    nnoremap <buffer> <silent> V :call dashboard#show_variables()<CR>
+    nnoremap <buffer> <silent> a :call dashboard#modify_variable()<CR>
+    nnoremap <buffer> <silent> A :call dashboard#show_variables()<CR>
     nnoremap <buffer> <silent> r :call dashboard#restart()<CR>
     nnoremap <buffer> <silent> R :call dashboard#reset_variables()<CR>
     nnoremap <buffer> <silent> s :call dashboard#show_sql()<CR>

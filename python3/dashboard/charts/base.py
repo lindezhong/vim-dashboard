@@ -152,16 +152,16 @@ class BaseChart(ABC):
             else:
                 chart_panel = chart_content
 
-            # Combine variables panel and chart
+            # Combine chart and variables panel (variables after chart)
             with self.console.capture() as capture:
-                if variables_panel:
-                    self.console.print(variables_panel)
-                    self.console.print()  # Add spacing
-
                 if isinstance(chart_panel, Panel):
                     self.console.print(chart_panel)
                 else:
                     self.console.print(chart_panel)
+
+                if variables_panel:
+                    self.console.print()  # Add spacing
+                    self.console.print(variables_panel)
 
             return capture.get()
                 
