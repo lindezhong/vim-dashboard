@@ -419,8 +419,14 @@ class SQLTemplateProcessor:
         if runtime_args is None:
             runtime_args = {}
         
+        # Merge runtime overrides with provided arguments
+        # Runtime overrides take precedence
+        merged_args = runtime_args.copy()
+        runtime_overrides = getattr(self, '_runtime_overrides', {})
+        merged_args.update(runtime_overrides)
+
         # Validate and prepare context
-        context = self.parameter_manager.validate_and_prepare_context(runtime_args)
+        context = self.parameter_manager.validate_and_prepare_context(merged_args)
         
         # Render template
         return self.template_engine.render_template(template_str, context)
@@ -432,3 +438,21 @@ class SQLTemplateProcessor:
     def get_parameter_info(self) -> Dict[str, Dict[str, Any]]:
         """Get parameter information."""
         return self.parameter_manager.get_parameter_info()
+
+    def set_runtime_overrides(self, overrides: Dict[str, Any]) -> None:
+        """
+        Set runtime variable overrides.
+
+        Args:
+            overrides: Dictionary of runtime variable overrides
+        """
+        # Store runtime overrides for use in render_sql
+        self._runtime_overrides = overrides.copy() if overrides else {}
+
+    def get_runtime_overrides(self) -> Dict[str, Any]:
+        """Get current runtime overrides."""
+        return getattr(self, '_runtime_overrides', {}).copy()
+
+    def clear_runtime_overrides(self) -> None:
+        """Clear all runtime overrides."""
+        self._runtime_overrides = {}
