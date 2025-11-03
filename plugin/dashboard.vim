@@ -53,8 +53,7 @@ augroup DashboardPlugin
   autocmd BufRead,BufEnter */vim-dashboard/*.dashboard call dashboard#setup_dashboard_buffer()
   autocmd FileChangedShell */dashboard/*.dashboard call dashboard#handle_file_changed()
   autocmd FileChangedShell */vim-dashboard/*.dashboard call dashboard#handle_file_changed()
-  " Auto-start dashboard when opening .dashboard files
-  autocmd BufRead,BufNewFile *.dashboard call dashboard#auto_start_from_dashboard_file()
+
   " Handle session restore - check for .dashboard files after session load
   autocmd SessionLoadPost * call dashboard#handle_session_dashboard_files()
 augroup END
