@@ -1179,7 +1179,7 @@ function! DashboardSQLPopupFilter(winid, key)
         \   'minheight': get(l:opts_before, 'minheight', 10),
         \   'maxwidth': get(l:opts_before, 'maxwidth', 60),
         \   'maxheight': get(l:opts_before, 'maxheight', 10)
-        \ }
+        \}
         call popup_setoptions(a:winid, l:restore_opts)
         let l:opts_after = popup_getoptions(a:winid)
         echom "DEBUG: After S-Down - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
@@ -1202,7 +1202,7 @@ function! DashboardSQLPopupFilter(winid, key)
         \   'minheight': get(l:opts_before, 'minheight', 10),
         \   'maxwidth': get(l:opts_before, 'maxwidth', 60),
         \   'maxheight': get(l:opts_before, 'maxheight', 10)
-        \ }
+        \}
         call popup_setoptions(a:winid, l:restore_opts)
         let l:opts_after = popup_getoptions(a:winid)
         echom "DEBUG: After S-Up - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
@@ -1224,7 +1224,7 @@ function! DashboardSQLPopupFilter(winid, key)
         \   'minheight': get(l:opts_before, 'minheight', 10),
         \   'maxwidth': get(l:opts_before, 'maxwidth', 60),
         \   'maxheight': get(l:opts_before, 'maxheight', 10)
-        \ }
+        \}
         call popup_setoptions(a:winid, l:restore_opts)
         let l:opts_after = popup_getoptions(a:winid)
         echom "DEBUG: After j/Down - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
@@ -1247,7 +1247,7 @@ function! DashboardSQLPopupFilter(winid, key)
         \   'minheight': get(l:opts_before, 'minheight', 10),
         \   'maxwidth': get(l:opts_before, 'maxwidth', 60),
         \   'maxheight': get(l:opts_before, 'maxheight', 10)
-        \ }
+        \}
         call popup_setoptions(a:winid, l:restore_opts)
         let l:opts_after = popup_getoptions(a:winid)
         echom "DEBUG: After k/Up - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
