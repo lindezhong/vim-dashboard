@@ -823,7 +823,7 @@ function! dashboard#delayed_session_dashboard_check(timer_id)
 
             " Try to verify dashboard is functional by checking Python core
             if s:init_python()
-              execute 'python3 << EOF'
+              python3 << EOF
 try:
     import dashboard.core
     core = dashboard.core.get_dashboard_core()
