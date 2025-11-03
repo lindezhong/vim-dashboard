@@ -1025,7 +1025,8 @@ def dashboard_show_sql():
 
         current_task = None
         for task_id, task_info in tasks.items():
-            vim.command(f'echohl WarningMsg | echo "DEBUG: Checking task {task_id}, temp_file: {repr(task_info.get(\"temp_file\"))}" | echohl None')
+            temp_file_value = task_info.get('temp_file')
+            vim.command(f'echohl WarningMsg | echo "DEBUG: Checking task {task_id}, temp_file: {temp_file_value}" | echohl None')
             if task_info.get('temp_file') == current_file:
                 current_task = core.scheduler.get_task(task_id)
                 vim.command(f'echohl WarningMsg | echo "DEBUG: Found matching task: {task_id}" | echohl None')
