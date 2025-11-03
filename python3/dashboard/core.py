@@ -1006,30 +1006,21 @@ def dashboard_reset_variables():
 def dashboard_show_sql():
     """Show the rendered SQL for current dashboard."""
     try:
-        # Debug: Start of function
-        vim.command('echohl WarningMsg | echo "DEBUG: dashboard_show_sql started" | echohl None')
-
         # Get current buffer file path
         current_file = vim.current.buffer.name
-        vim.command(f'echohl WarningMsg | echo "DEBUG: current_file = {repr(current_file)}" | echohl None')
 
         if not current_file:
             vim.command('echohl ErrorMsg | echo "No active dashboard buffer" | echohl None')
             return
 
         # Find the task associated with this temp file
-        vim.command('echohl WarningMsg | echo "DEBUG: Getting dashboard core..." | echohl None')
         core = get_dashboard_core()
         tasks = core.scheduler.list_tasks()
-        vim.command(f'echohl WarningMsg | echo "DEBUG: Found {len(tasks)} tasks" | echohl None')
 
         current_task = None
         for task_id, task_info in tasks.items():
-            temp_file_value = task_info.get('temp_file')
-            vim.command(f'echohl WarningMsg | echo "DEBUG: Checking task {task_id}, temp_file: {temp_file_value}" | echohl None')
             if task_info.get('temp_file') == current_file:
                 current_task = core.scheduler.get_task(task_id)
-                vim.command(f'echohl WarningMsg | echo "DEBUG: Found matching task: {task_id}" | echohl None')
                 break
 
         if not current_task:
@@ -1037,16 +1028,13 @@ def dashboard_show_sql():
             return
 
         # Get the rendered SQL
-        vim.command('echohl WarningMsg | echo "DEBUG: Getting rendered SQL..." | echohl None')
         rendered_sql = current_task.get_rendered_sql()
-        vim.command(f'echohl WarningMsg | echo "DEBUG: SQL length: {len(rendered_sql) if rendered_sql else 0}" | echohl None')
 
         if not rendered_sql:
             vim.command('echohl WarningMsg | echo "No SQL found for current dashboard" | echohl None')
             return
 
         # Prepare SQL content for popup display
-        vim.command('echohl WarningMsg | echo "DEBUG: Preparing popup content..." | echohl None')
         sql_lines = rendered_sql.split('\n')
 
         # Add header with operation keys information at the top
@@ -1062,7 +1050,6 @@ def dashboard_show_sql():
 
         # Add variables info
         variables_info = current_task.get_variables_info()
-        vim.command(f'echohl WarningMsg | echo "DEBUG: Variables info: {repr(variables_info)}" | echohl None')
 
         if variables_info:
             for var_name, var_info in variables_info.items():
@@ -1074,11 +1061,6 @@ def dashboard_show_sql():
         lines.extend(["", "Rendered SQL:"])
         lines.extend(sql_lines)
 
-        # Store the index where SQL content starts (excluding operation keys)
-        sql_content_start_index = 4  # "Dashboard Rendered SQL" line index
-
-        vim.command(f'echohl WarningMsg | echo "DEBUG: Content prepared, {len(lines)} lines" | echohl None')
-
         # Calculate popup dimensions
         max_width = max(len(line) for line in lines) + 4
         max_height = min(len(lines) + 2, 30)  # Limit height to 30 lines
@@ -1087,15 +1069,15 @@ def dashboard_show_sql():
         popup_width = max(max_width, 60)
         popup_height = max(max_height, 10)
 
-        vim.command(f'echohl WarningMsg | echo "DEBUG: Popup dimensions: {popup_width}x{popup_height}" | echohl None')
-
         # Create popup using coc.nvim-style implementation
         # Simple, reliable approach without complex scrolling logic
 
         # Prepare content for display
         content_lines = []
         for line in lines:
-            content_lines.append(line.replace("'", "''"))  # Escape single quotes for VimScript
+            # Escape single quotes and handle newlines properly
+            escaped_line = line.replace("'", "''").replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "")
+            content_lines.append(escaped_line)
 
         # Create a temporary buffer with the content
         vim.command('let l:temp_buf = bufnr("__dashboard_sql__", 1)')
