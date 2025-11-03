@@ -1250,53 +1250,7 @@ endfunction
             ''')
 
         vim.command('echo "SQL popup created. Press q/Esc to close, y to copy SQL content."')
-    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-    -- Skip the first 4 lines (operation keys section)
-    local sql_lines = {}
-    for i = 5, #lines do
-        table.insert(sql_lines, lines[i])
-    end
-    local text = table.concat(sql_lines, "\n")
-    vim.fn.setreg('+', text)
-    vim.fn.setreg('*', text)
-    print("SQL content copied to clipboard!")
-end
 
-function DashboardScrollDown(lines)
-    -- Use Ctrl+E to scroll down without moving cursor or changing window
-    local win = vim.api.nvim_get_current_win()
-    local win_config_before = vim.api.nvim_win_get_config(win)
-    local win_height_before = vim.api.nvim_win_get_height(win)
-    local win_width_before = vim.api.nvim_win_get_width(win)
-    local win_pos_before = vim.api.nvim_win_get_position(win)
-    print("DEBUG: Neovim Before scroll down - pos:" .. (win_config_before.relative or 'normal') .. " row:" .. win_pos_before[1] .. " col:" .. win_pos_before[2] .. " width:" .. win_width_before .. " height:" .. win_height_before)
-    print("DEBUG: Neovim scroll down " .. lines .. " lines")
-    for i = 1, lines do
-        vim.cmd('normal! \\<C-e>')
-    end
-    local win_config_after = vim.api.nvim_win_get_config(win)
-    local win_height_after = vim.api.nvim_win_get_height(win)
-    local win_width_after = vim.api.nvim_win_get_width(win)
-    local win_pos_after = vim.api.nvim_win_get_position(win)
-    print("DEBUG: Neovim After scroll down - pos:" .. (win_config_after.relative or 'normal') .. " row:" .. win_pos_after[1] .. " col:" .. win_pos_after[2] .. " width:" .. win_width_after .. " height:" .. win_height_after)
-end
-
-function DashboardScrollUp(lines)
-    -- Use Ctrl+Y to scroll up without moving cursor or changing window
-    local win = vim.api.nvim_get_current_win()
-    local win_config_before = vim.api.nvim_win_get_config(win)
-    local win_height_before = vim.api.nvim_win_get_height(win)
-    local win_width_before = vim.api.nvim_win_get_width(win)
-    local win_pos_before = vim.api.nvim_win_get_position(win)
-    print("DEBUG: Neovim Before scroll up - pos:" .. (win_config_before.relative or 'normal') .. " row:" .. win_pos_before[1] .. " col:" .. win_pos_before[2] .. " width:" .. win_width_before .. " height:" .. win_height_before)
-    print("DEBUG: Neovim scroll up " .. lines .. " lines")
-    for i = 1, lines do
-        vim.cmd('normal! \\<C-y>')
-    end
-    local win_config_after = vim.api.nvim_win_get_config(win)
-    local win_height_after = vim.api.nvim_win_get_height(win)
-    local win_width_after = vim.api.nvim_win_get_width(win)
-    local win_pos_after = vim.api.nvim_win_get_position(win)
     except Exception as e:
         error_msg = format_error_message(e, "Show SQL")
         vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
