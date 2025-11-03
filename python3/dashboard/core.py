@@ -936,25 +936,36 @@ def dashboard_update_variable(var_name: str, new_value: str):
         tasks = core.scheduler.list_tasks()
 
         current_task_id = None
+        current_task = None
         for task_id, task_info in tasks.items():
             if task_info.get('temp_file') == current_file:
                 current_task_id = task_id
+                current_task = core.scheduler.get_task(task_id)
                 break
 
-        if not current_task_id:
+        if not current_task_id or not current_task:
             vim.command('echohl ErrorMsg | echo "Current buffer is not a dashboard" | echohl None')
+            return
+
+        # Check if variable exists
+        variables_info = current_task.get_variables_info()
+        if var_name not in variables_info:
+            vim.command(f'echohl ErrorMsg | echo "Variable {var_name} not found" | echohl None')
             return
 
         # Update the variable (this will trigger refresh automatically)
         success = core.scheduler.update_variable(current_task_id, var_name, new_value)
 
         if success:
-            vim.command(f'echohl MoreMsg | echo "Variable {var_name} updated and dashboard refreshed" | echohl None')
+            vim.command(f'echohl MoreMsg | echo "Variable {var_name} updated to \\"{new_value}\\" and dashboard refreshed" | echohl None')
         else:
-            vim.command(f'echohl ErrorMsg | echo "Failed to update variable {var_name}" | echohl None')
+            # Get detailed error from task
+            error_msg = getattr(current_task, 'last_error', 'Unknown error')
+            vim.command(f'echohl ErrorMsg | echo "Failed to update variable {var_name}: {error_msg}" | echohl None')
 
     except Exception as e:
-        error_msg = format_error_message(e, "Update Variable")
+        import traceback
+        error_msg = f"Error updating variable: {str(e)}\\n{traceback.format_exc()}"
         vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
 
 def dashboard_reset_variables():
