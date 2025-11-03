@@ -823,22 +823,22 @@ function! dashboard#delayed_session_dashboard_check(timer_id)
 
             " Try to verify dashboard is functional by checking Python core
             if s:init_python()
-              python3 << EOF
-try:
-    import dashboard.core
-    core = dashboard.core.get_dashboard_core()
-    current_file = vim.current.buffer.name
-    tasks = core.scheduler.list_tasks()
-    is_functional = False
-    for task_id, task_info in tasks.items():
-        if task_info.get('temp_file') == current_file:
-            is_functional = True
-            break
-    vim.command('let l:is_functional = ' + ('1' if is_functional else '0'))
-except Exception as e:
-    # If any error occurs, assume not functional
-    vim.command('let l:is_functional = 0')
-EOF
+              let l:is_functional = 0
+              try
+                execute 'python3 import dashboard.core'
+                execute 'python3 core = dashboard.core.get_dashboard_core()'
+                execute 'python3 current_file = vim.current.buffer.name'
+                execute 'python3 tasks = core.scheduler.list_tasks()'
+                execute 'python3 is_functional = False'
+                execute 'python3 ' .
+                  \ 'for task_id, task_info in tasks.items(): ' .
+                  \ 'is_functional = task_info.get("temp_file") == current_file; ' .
+                  \ 'if is_functional: break'
+                execute 'python3 vim.command("let l:is_functional = " + ("1" if is_functional else "0"))'
+              catch
+                let l:is_functional = 0
+              endtry
+
               " If dashboard is functional, don't restart
               if l:is_functional
                 let l:should_start = 0
