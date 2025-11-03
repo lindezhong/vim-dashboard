@@ -1163,44 +1163,48 @@ function! DashboardSQLPopupFilter(winid, key)
         echo "SQL content copied to clipboard!"
         return 1
     elseif a:key == "\<S-Down>"
-        " Scroll down (page down) - use popup_setoptions with only firstline to avoid position changes
+        " Scroll down (page down) - use win_execute to avoid popup_setoptions issues
         let l:opts_before = popup_getoptions(a:winid)
         echom "DEBUG: Before S-Down - pos:" . get(l:opts_before, 'pos', 'center') . " firstline:" . get(l:opts_before, 'firstline', 1) . " minwidth:" . get(l:opts_before, 'minwidth', 'auto') . " minheight:" . get(l:opts_before, 'minheight', 'auto')
         let l:current_first = get(l:opts_before, 'firstline', 1)
         echom "DEBUG: S-Down scroll from line " . l:current_first . " to " . (l:current_first + 10)
-        call popup_setoptions(a:winid, {'firstline': l:current_first + 10})
+        " Use win_execute to execute scroll commands in the popup window context
+        call win_execute(a:winid, 'normal! 10' . "\<C-E>")
         let l:opts_after = popup_getoptions(a:winid)
         echom "DEBUG: After S-Down - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
         return 1
     elseif a:key == "\<S-Up>"
-        " Scroll up (page up) - use popup_setoptions with only firstline to avoid position changes
+        " Scroll up (page up) - use win_execute to avoid popup_setoptions issues
         let l:opts_before = popup_getoptions(a:winid)
         echom "DEBUG: Before S-Up - pos:" . get(l:opts_before, 'pos', 'center') . " firstline:" . get(l:opts_before, 'firstline', 1) . " minwidth:" . get(l:opts_before, 'minwidth', 'auto') . " minheight:" . get(l:opts_before, 'minheight', 'auto')
         let l:current_first = get(l:opts_before, 'firstline', 1)
         let l:new_first = max([1, l:current_first - 10])
         echom "DEBUG: S-Up scroll from line " . l:current_first . " to " . l:new_first
-        call popup_setoptions(a:winid, {'firstline': l:new_first})
+        " Use win_execute to execute scroll commands in the popup window context
+        call win_execute(a:winid, 'normal! 10' . "\<C-Y>")
         let l:opts_after = popup_getoptions(a:winid)
         echom "DEBUG: After S-Up - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
         return 1
     elseif a:key == "\<Down>" || a:key == 'j'
-        " Scroll down one line - use popup_setoptions with only firstline to avoid position changes
+        " Scroll down one line - use win_execute to avoid popup_setoptions issues
         let l:opts_before = popup_getoptions(a:winid)
         echom "DEBUG: Before j/Down - pos:" . get(l:opts_before, 'pos', 'center') . " firstline:" . get(l:opts_before, 'firstline', 1) . " minwidth:" . get(l:opts_before, 'minwidth', 'auto') . " minheight:" . get(l:opts_before, 'minheight', 'auto')
         let l:current_first = get(l:opts_before, 'firstline', 1)
         echom "DEBUG: j/Down scroll from line " . l:current_first . " to " . (l:current_first + 1)
-        call popup_setoptions(a:winid, {'firstline': l:current_first + 1})
+        " Use win_execute to execute scroll commands in the popup window context
+        call win_execute(a:winid, 'normal! ' . "\<C-E>")
         let l:opts_after = popup_getoptions(a:winid)
         echom "DEBUG: After j/Down - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
         return 1
     elseif a:key == "\<Up>" || a:key == 'k'
-        " Scroll up one line - use popup_setoptions with only firstline to avoid position changes
+        " Scroll up one line - use win_execute to avoid popup_setoptions issues
         let l:opts_before = popup_getoptions(a:winid)
         echom "DEBUG: Before k/Up - pos:" . get(l:opts_before, 'pos', 'center') . " firstline:" . get(l:opts_before, 'firstline', 1) . " minwidth:" . get(l:opts_before, 'minwidth', 'auto') . " minheight:" . get(l:opts_before, 'minheight', 'auto')
         let l:current_first = get(l:opts_before, 'firstline', 1)
         let l:new_first = max([1, l:current_first - 1])
         echom "DEBUG: k/Up scroll from line " . l:current_first . " to " . l:new_first
-        call popup_setoptions(a:winid, {'firstline': l:new_first})
+        " Use win_execute to execute scroll commands in the popup window context
+        call win_execute(a:winid, 'normal! ' . "\<C-Y>")
         let l:opts_after = popup_getoptions(a:winid)
         echom "DEBUG: After k/Up - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
         return 1
