@@ -68,9 +68,9 @@ class DashboardCore:
             existing_task = self.scheduler.get_task_by_config_file(config_file)
             if existing_task:
                 # Use vim's shellescape() to safely handle paths with special characters
-                vim.command('echohl WarningMsg')
-                vim.command('echo "Dashboard already running for: " . shellescape(' + repr(config_file) + ')')
-                vim.command('echohl None')
+                # vim.command('echohl WarningMsg')
+                # vim.command('echo "Dashboard already running for: " . shellescape(' + repr(config_file) + ')')
+                # vim.command('echohl None')
 
                 # Open existing temp file
                 temp_file = existing_task.get_temp_file_path()
