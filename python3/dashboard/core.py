@@ -1269,7 +1269,7 @@ function DashboardScrollDown(lines)
     print("DEBUG: Neovim Before scroll down - row:" .. (win_config_before.row or 'none') .. " col:" .. (win_config_before.col or 'none') .. " width:" .. (win_config_before.width or 'none') .. " height:" .. (win_config_before.height or 'none'))
     print("DEBUG: Neovim scroll down " .. lines .. " lines")
     for i = 1, lines do
-        vim.cmd('normal! \<C-e>')
+        vim.cmd('normal! \\<C-e>')
     end
     local win_config_after = vim.api.nvim_win_get_config(win)
     print("DEBUG: Neovim After scroll down - row:" .. (win_config_after.row or 'none') .. " col:" .. (win_config_after.col or 'none') .. " width:" .. (win_config_after.width or 'none') .. " height:" .. (win_config_after.height or 'none'))
@@ -1282,7 +1282,7 @@ function DashboardScrollUp(lines)
     print("DEBUG: Neovim Before scroll up - row:" .. (win_config_before.row or 'none') .. " col:" .. (win_config_before.col or 'none') .. " width:" .. (win_config_before.width or 'none') .. " height:" .. (win_config_before.height or 'none'))
     print("DEBUG: Neovim scroll up " .. lines .. " lines")
     for i = 1, lines do
-        vim.cmd('normal! \<C-y>')
+        vim.cmd('normal! \\<C-y>')
     end
     local win_config_after = vim.api.nvim_win_get_config(win)
     print("DEBUG: Neovim After scroll up - row:" .. (win_config_after.row or 'none') .. " col:" .. (win_config_after.col or 'none') .. " width:" .. (win_config_after.width or 'none') .. " height:" .. (win_config_after.height or 'none'))
@@ -1329,7 +1329,7 @@ function! DashboardScrollDownFallback(lines)
     echom "DEBUG: Fallback scroll down " . a:lines . " lines"
     let l:i = 0
     while l:i < a:lines
-        execute "normal! \<C-e>"
+        execute "normal! \\<C-e>"
         let l:i = l:i + 1
     endwhile
     echom "DEBUG: Fallback After scroll down - winheight:" . winheight(0) . " winwidth:" . winwidth(0) . " line:" . line('.') . " wintop:" . line('w0')
@@ -1341,7 +1341,7 @@ function! DashboardScrollUpFallback(lines)
     echom "DEBUG: Fallback scroll up " . a:lines . " lines"
     let l:i = 0
     while l:i < a:lines
-        execute "normal! \<C-y>"
+        execute "normal! \\<C-y>"
         let l:i = l:i + 1
     endwhile
     echom "DEBUG: Fallback After scroll up - winheight:" . winheight(0) . " winwidth:" . winwidth(0) . " line:" . line('.') . " wintop:" . line('w0')
