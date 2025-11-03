@@ -1157,6 +1157,37 @@ local function copy_content()
     print("SQL content copied to clipboard!")
 end
 
+-- Scrolling functions
+local function scroll_down()
+    local current_line = vim.api.nvim_win_get_cursor(win)[1]
+    local total_lines = vim.api.nvim_buf_line_count(buf)
+    local win_height = vim.api.nvim_win_get_height(win)
+    local new_line = math.min(current_line + math.floor(win_height / 2), total_lines)
+    vim.api.nvim_win_set_cursor(win, {{new_line, 0}})
+end
+
+local function scroll_up()
+    local current_line = vim.api.nvim_win_get_cursor(win)[1]
+    local win_height = vim.api.nvim_win_get_height(win)
+    local new_line = math.max(current_line - math.floor(win_height / 2), 1)
+    vim.api.nvim_win_set_cursor(win, {{new_line, 0}})
+end
+
+local function scroll_page_down()
+    local current_line = vim.api.nvim_win_get_cursor(win)[1]
+    local total_lines = vim.api.nvim_buf_line_count(buf)
+    local win_height = vim.api.nvim_win_get_height(win)
+    local new_line = math.min(current_line + win_height - 1, total_lines)
+    vim.api.nvim_win_set_cursor(win, {{new_line, 0}})
+end
+
+local function scroll_page_up()
+    local current_line = vim.api.nvim_win_get_cursor(win)[1]
+    local win_height = vim.api.nvim_win_get_height(win)
+    local new_line = math.max(current_line - win_height + 1, 1)
+    vim.api.nvim_win_set_cursor(win, {{new_line, 0}})
+end
+
 -- Key mappings
 vim.api.nvim_buf_set_keymap(buf, 'n', 'q', '', {{
     callback = close_popup,
@@ -1170,6 +1201,80 @@ vim.api.nvim_buf_set_keymap(buf, 'n', '<Esc>', '', {{
 }})
 vim.api.nvim_buf_set_keymap(buf, 'n', 'y', '', {{
     callback = copy_content,
+    noremap = true,
+    silent = true
+}})
+
+-- Scrolling key mappings
+vim.api.nvim_buf_set_keymap(buf, 'n', 'j', '', {{
+    callback = function()
+        local current_line = vim.api.nvim_win_get_cursor(win)[1]
+        local total_lines = vim.api.nvim_buf_line_count(buf)
+        if current_line < total_lines then
+            vim.api.nvim_win_set_cursor(win, {{current_line + 1, 0}})
+        end
+    end,
+    noremap = true,
+    silent = true
+}})
+vim.api.nvim_buf_set_keymap(buf, 'n', 'k', '', {{
+    callback = function()
+        local current_line = vim.api.nvim_win_get_cursor(win)[1]
+        if current_line > 1 then
+            vim.api.nvim_win_set_cursor(win, {{current_line - 1, 0}})
+        end
+    end,
+    noremap = true,
+    silent = true
+}})
+vim.api.nvim_buf_set_keymap(buf, 'n', '<Down>', '', {{
+    callback = function()
+        local current_line = vim.api.nvim_win_get_cursor(win)[1]
+        local total_lines = vim.api.nvim_buf_line_count(buf)
+        if current_line < total_lines then
+            vim.api.nvim_win_set_cursor(win, {{current_line + 1, 0}})
+        end
+    end,
+    noremap = true,
+    silent = true
+}})
+vim.api.nvim_buf_set_keymap(buf, 'n', '<Up>', '', {{
+    callback = function()
+        local current_line = vim.api.nvim_win_get_cursor(win)[1]
+        if current_line > 1 then
+            vim.api.nvim_win_set_cursor(win, {{current_line - 1, 0}})
+        end
+    end,
+    noremap = true,
+    silent = true
+}})
+vim.api.nvim_buf_set_keymap(buf, 'n', '<S-Down>', '', {{
+    callback = scroll_down,
+    noremap = true,
+    silent = true
+}})
+vim.api.nvim_buf_set_keymap(buf, 'n', '<S-Up>', '', {{
+    callback = scroll_up,
+    noremap = true,
+    silent = true
+}})
+vim.api.nvim_buf_set_keymap(buf, 'n', '<PageDown>', '', {{
+    callback = scroll_page_down,
+    noremap = true,
+    silent = true
+}})
+vim.api.nvim_buf_set_keymap(buf, 'n', '<PageUp>', '', {{
+    callback = scroll_page_up,
+    noremap = true,
+    silent = true
+}})
+vim.api.nvim_buf_set_keymap(buf, 'n', '<C-f>', '', {{
+    callback = scroll_page_down,
+    noremap = true,
+    silent = true
+}})
+vim.api.nvim_buf_set_keymap(buf, 'n', '<C-b>', '', {{
+    callback = scroll_page_up,
     noremap = true,
     silent = true
 }})
@@ -1218,6 +1323,34 @@ function! DashboardSQLPopupFilter(winid, key)
         let @* = l:text
         echo "SQL content copied to clipboard!"
         return 1
+    elseif a:key == 'j' || a:key == "\<Down>"
+        " Scroll down one line
+        call win_execute(a:winid, 'normal! j')
+        return 1
+    elseif a:key == 'k' || a:key == "\<Up>"
+        " Scroll up one line
+        call win_execute(a:winid, 'normal! k')
+        return 1
+    elseif a:key == "\<S-Down>"
+        " Scroll down half page
+        let l:height = popup_getpos(a:winid).height
+        let l:scroll_lines = l:height / 2
+        call win_execute(a:winid, 'normal! ' . l:scroll_lines . 'j')
+        return 1
+    elseif a:key == "\<S-Up>"
+        " Scroll up half page
+        let l:height = popup_getpos(a:winid).height
+        let l:scroll_lines = l:height / 2
+        call win_execute(a:winid, 'normal! ' . l:scroll_lines . 'k')
+        return 1
+    elseif a:key == "\<PageDown>" || a:key == "\<C-f>"
+        " Scroll down full page
+        call win_execute(a:winid, 'normal! ' . "\<C-f>")
+        return 1
+    elseif a:key == "\<PageUp>" || a:key == "\<C-b>"
+        " Scroll up full page
+        call win_execute(a:winid, 'normal! ' . "\<C-b>")
+        return 1
     endif
     return 0
 endfunction
@@ -1237,6 +1370,18 @@ nnoremap <buffer> q :close<CR>
 nnoremap <buffer> <Esc> :close<CR>
 nnoremap <buffer> y :call DashboardCopySQLContent()<CR>
 
+" Scrolling key mappings for split window
+nnoremap <buffer> j j
+nnoremap <buffer> k k
+nnoremap <buffer> <Down> j
+nnoremap <buffer> <Up> k
+nnoremap <buffer> <S-Down> <C-d>
+nnoremap <buffer> <S-Up> <C-u>
+nnoremap <buffer> <PageDown> <C-f>
+nnoremap <buffer> <PageUp> <C-b>
+nnoremap <buffer> <C-f> <C-f>
+nnoremap <buffer> <C-b> <C-b>
+
 function! DashboardCopySQLContent()
     let l:lines = getline(10, '$')  " Skip first 9 lines
     let l:text = join(l:lines, "\\n")
@@ -1246,7 +1391,7 @@ function! DashboardCopySQLContent()
 endfunction
             ''')
 
-        vim.command('echohl MoreMsg | echo "SQL popup created. Press q/Esc to close, y to copy SQL content." | echohl None')
+        vim.command('echohl MoreMsg | echo "SQL popup created. Keys: q/Esc=close, y=copy, j/k/↑↓=scroll, Shift+↑↓=half-page, PageUp/Down=full-page" | echohl None')
 
     except Exception as e:
         import traceback
