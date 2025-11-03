@@ -1044,7 +1044,7 @@ def dashboard_show_sql():
 
         # Add header with operation keys information at the top
         lines = [
-            "Press 'q/Esc' to quit, 'y' to copy, 'Shift+Down/Up' to scroll",
+            "Press 'Esc' to quit, 'y' to copy, 'Shift+Down/Up' to scroll",
             "",
             "Dashboard Rendered SQL",
             f"Config: {os.path.basename(current_task.config_file)}",
@@ -1202,11 +1202,6 @@ local function scroll_line_up()
 end
 
 -- Key mappings
-vim.api.nvim_buf_set_keymap(buf, 'n', 'q', '', {{
-    callback = close_popup,
-    noremap = true,
-    silent = true
-}})
 vim.api.nvim_buf_set_keymap(buf, 'n', '<Esc>', '', {{
     callback = close_popup,
     noremap = true,
@@ -1312,7 +1307,7 @@ vim.g.dashboard_sql_popup_win = win
             # Define the filter function separately to avoid escaping issues
             vim.command(r'''
 function! DashboardSQLPopupFilter(winid, key)
-    if a:key == 'q' || a:key == "\<Esc>"
+    if a:key == "\<Esc>"
         call popup_close(a:winid)
         return 1
     elseif a:key == 'y'
@@ -1332,23 +1327,11 @@ function! DashboardSQLPopupFilter(winid, key)
         " Scroll up one line
         call win_execute(a:winid, 'normal! k')
         return 1
-    elseif a:key == "\<S-Down>"
-        " Scroll down half page
-        let l:height = popup_getpos(a:winid).height
-        let l:scroll_lines = l:height / 2
-        call win_execute(a:winid, 'normal! ' . l:scroll_lines . 'j')
-        return 1
-    elseif a:key == "\<S-Up>"
-        " Scroll up half page
-        let l:height = popup_getpos(a:winid).height
-        let l:scroll_lines = l:height / 2
-        call win_execute(a:winid, 'normal! ' . l:scroll_lines . 'k')
-        return 1
-    elseif a:key == "\<PageDown>" || a:key == "\<C-f>"
+    elseif a:key == "\<PageDown>" || a:key == "\<C-f>" || a:key == "\<S-Down>" || a:key == "\<S-j>"
         " Scroll down full page
         call win_execute(a:winid, 'normal! ' . "\<C-f>")
         return 1
-    elseif a:key == "\<PageUp>" || a:key == "\<C-b>"
+    elseif a:key == "\<PageUp>" || a:key == "\<C-b>" || a:key == "\<S-Up>"  || a:key == "\<S-k>"
         " Scroll up full page
         call win_execute(a:winid, 'normal! ' . "\<C-b>")
         return 1
@@ -1392,7 +1375,7 @@ function! DashboardCopySQLContent()
 endfunction
             ''')
 
-        vim.command('echohl MoreMsg | echo "SQL popup created. Keys: q/Esc=close, y=copy, j/k/↑↓=scroll, Shift+↑↓=half-page, PageUp/Down=full-page" | echohl None')
+        vim.command('echohl MoreMsg | echo "SQL popup created. Keys: Esc=close, y=copy, j/k/↑↓=scroll, Shift+↑↓=half-page, PageUp/Down=full-page" | echohl None')
 
     except Exception as e:
         import traceback
