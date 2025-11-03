@@ -26,6 +26,7 @@ command! -nargs=? -complete=file DashboardStop call dashboard#stop(<q-args>)
 command! -nargs=0 DashboardList call dashboard#list()
 command! -nargs=0 DashboardStatus call dashboard#status()
 command! -nargs=0 Dashboard call dashboard#browse()
+command! -nargs=0 DashboardClose call dashboard#close()
 " Variable management commands
 command! -nargs=0 DashboardShowVariables call dashboard#show_variables()
 command! -nargs=0 DashboardModifyVariable call dashboard#modify_variable()

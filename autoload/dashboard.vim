@@ -225,6 +225,24 @@ EOF
   endtry
 endfunction
 
+" Close dashboard browser
+function! dashboard#close()
+  if !s:init_python()
+    return
+  endif
+
+  try
+    execute 'python3 << EOF'
+import dashboard.core
+dashboard.core.dashboard_close()
+EOF
+  catch
+    echohl ErrorMsg
+    echom 'Error closing dashboard browser: ' . v:exception
+    echohl None
+  endtry
+endfunction
+
 " Initialize dashboard system
 function! dashboard#init()
   if !s:init_python()

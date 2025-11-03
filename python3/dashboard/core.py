@@ -509,7 +509,7 @@ endfor
 
             # Set up key mappings
             vim.command('nnoremap <buffer> <silent> <CR> :python3 import dashboard.core; dashboard.core.dashboard_sidebar_select()<CR>')
-            vim.command('nnoremap <buffer> q :quit<CR>')
+            vim.command('nnoremap <buffer> <silent> q :python3 import dashboard.core; dashboard.core.dashboard_close()<CR>')
             vim.command('nnoremap <buffer> <silent> r :python3 import dashboard.core; dashboard.core.dashboard_sidebar_restart()<CR>')
             vim.command('nnoremap <buffer> <silent> t :python3 import dashboard.core; dashboard.core.dashboard_sidebar_stop()<CR>')
 
@@ -531,6 +531,43 @@ endfor
             vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
             return False
     
+    def close_dashboard_browser(self) -> bool:
+        """Close dashboard browser sidebar."""
+        try:
+            # Check if sidebar exists
+            sidebar_exists = vim.eval('g:dashboard_sidebar_exists') == '1'
+
+            if sidebar_exists:
+                # Find and close the sidebar buffer
+                vim.command('let l:current_win = winnr()')
+
+                # Look for dashboard-sidebar buffer
+                vim.command('for l:i in range(1, winnr("$"))')
+                vim.command('  execute l:i . "wincmd w"')
+                vim.command('  if &filetype == "dashboard-sidebar"')
+                vim.command('    quit')
+                vim.command('    break')
+                vim.command('  endif')
+                vim.command('endfor')
+
+                # Return to original window if it still exists
+                vim.command('if winnr("$") >= l:current_win')
+                vim.command('  execute l:current_win . "wincmd w"')
+                vim.command('endif')
+
+                # Mark sidebar as closed
+                vim.command('let g:dashboard_sidebar_exists = 0')
+
+                return True
+            else:
+                vim.command('echo "Dashboard sidebar is not open"')
+                return False
+
+        except Exception as e:
+            error_msg = format_error_message(e, "Dashboard Close")
+            vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
+            return False
+
     def cleanup(self):
         """Cleanup dashboard resources."""
         try:
@@ -585,6 +622,11 @@ def dashboard_browser():
     """Vim interface for opening dashboard browser."""
     core = get_dashboard_core()
     core.open_dashboard_browser()
+
+def dashboard_close():
+    """Vim interface for closing dashboard browser."""
+    core = get_dashboard_core()
+    core.close_dashboard_browser()
 
 
 def dashboard_open_selected():
