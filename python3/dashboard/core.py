@@ -538,25 +538,34 @@ endfor
             sidebar_exists = vim.eval('g:dashboard_sidebar_exists') == '1'
 
             if sidebar_exists:
-                # Find and close the sidebar buffer
-                vim.command('let l:current_win = winnr()')
+                # Save current window number
+                current_win = int(vim.eval('winnr()'))
+                total_wins = int(vim.eval('winnr("$")'))
 
                 # Look for dashboard-sidebar buffer
-                vim.command('for l:i in range(1, winnr("$"))')
-                vim.command('  execute l:i . "wincmd w"')
-                vim.command('  if &filetype == "dashboard-sidebar"')
-                vim.command('    quit')
-                vim.command('    break')
-                vim.command('  endif')
-                vim.command('endfor')
+                sidebar_found = False
+                for i in range(1, total_wins + 1):
+                    vim.command(f'{i}wincmd w')
+                    filetype = vim.eval('&filetype')
+                    if filetype == 'dashboard-sidebar':
+                        vim.command('quit')
+                        sidebar_found = True
+                        break
 
                 # Return to original window if it still exists
-                vim.command('if winnr("$") >= l:current_win')
-                vim.command('  execute l:current_win . "wincmd w"')
-                vim.command('endif')
+                new_total_wins = int(vim.eval('winnr("$")'))
+                if new_total_wins >= current_win:
+                    vim.command(f'{current_win}wincmd w')
+                elif new_total_wins > 0:
+                    vim.command('1wincmd w')
 
                 # Mark sidebar as closed
                 vim.command('let g:dashboard_sidebar_exists = 0')
+
+                if sidebar_found:
+                    vim.command('echo "Dashboard sidebar closed"')
+                else:
+                    vim.command('echo "Dashboard sidebar buffer not found"')
 
                 return True
             else:
