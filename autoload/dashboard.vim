@@ -811,13 +811,19 @@ function! dashboard#delayed_session_dashboard_check(timer_id)
       let l:bufname = bufname(l:bufnr)
       " Check if this is a .dashboard file
       if l:bufname =~# '\.dashboard$'
-        " Switch to this buffer temporarily to trigger auto-start
-        let l:current_buf = bufnr('%')
-        execute 'buffer ' . l:bufnr
-        call dashboard#auto_start_from_dashboard_file()
-        " Switch back to original buffer if it still exists
-        if bufexists(l:current_buf)
-          execute 'buffer ' . l:current_buf
+        " Check if this dashboard is already running by checking if it's already set up
+        let l:is_already_setup = getbufvar(l:bufnr, 'is_dashboard_buffer', 0)
+
+        " Only auto-start if not already set up (to avoid duplicate starts)
+        if !l:is_already_setup
+          " Switch to this buffer temporarily to trigger auto-start
+          let l:current_buf = bufnr('%')
+          execute 'buffer ' . l:bufnr
+          call dashboard#auto_start_from_dashboard_file()
+          " Switch back to original buffer if it still exists
+          if bufexists(l:current_buf)
+            execute 'buffer ' . l:current_buf
+          endif
         endif
       endif
     endif
