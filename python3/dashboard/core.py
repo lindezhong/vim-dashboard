@@ -1182,36 +1182,38 @@ vim.g.dashboard_sql_popup_win = win
             vim.command('EOF')
         elif vim.eval('exists("*popup_create")') == '1':
             vim.command('echohl WarningMsg | echo "[DEBUG] Using Vim popup" | echohl None')
-            # Vim popup - fix escaping issues
-            vim.command(f'''
-let l:popup_opts = {{
-    \\ 'title': ' SQL Query ',
-    \\ 'wrap': 0,
-    \\ 'scrollbar': 1,
-    \\ 'resize': 0,
-    \\ 'close': 'button',
-    \\ 'border': [],
-    \\ 'borderchars': ['─', '│', '─', '│', '┌', '┐', '┘', '└'],
-    \\ 'minwidth': {width},
-    \\ 'maxwidth': {width},
-    \\ 'minheight': {height},
-    \\ 'maxheight': {height},
-    \\ 'pos': 'center',
-    \\ 'mapping': 0,
-    \\ 'filter': 'DashboardSQLPopupFilter'
-\\ }}
+            # Vim popup - use safer approach to avoid escaping issues
 
-let g:dashboard_sql_popup_id = popup_create(l:temp_buf, l:popup_opts)
+            # Create popup options step by step to avoid complex escaping
+            vim.command('let l:popup_opts = {}')
+            vim.command("let l:popup_opts['title'] = ' SQL Query '")
+            vim.command("let l:popup_opts['wrap'] = 0")
+            vim.command("let l:popup_opts['scrollbar'] = 1")
+            vim.command("let l:popup_opts['resize'] = 0")
+            vim.command("let l:popup_opts['close'] = 'button'")
+            vim.command("let l:popup_opts['border'] = []")
+            vim.command("let l:popup_opts['borderchars'] = ['─', '│', '─', '│', '┌', '┐', '┘', '└']")
+            vim.command(f"let l:popup_opts['minwidth'] = {width}")
+            vim.command(f"let l:popup_opts['maxwidth'] = {width}")
+            vim.command(f"let l:popup_opts['minheight'] = {height}")
+            vim.command(f"let l:popup_opts['maxheight'] = {height}")
+            vim.command("let l:popup_opts['pos'] = 'center'")
+            vim.command("let l:popup_opts['mapping'] = 0")
+            vim.command("let l:popup_opts['filter'] = 'DashboardSQLPopupFilter'")
 
+            vim.command('let g:dashboard_sql_popup_id = popup_create(l:temp_buf, l:popup_opts)')
+
+            # Define the filter function separately to avoid escaping issues
+            vim.command(r'''
 function! DashboardSQLPopupFilter(winid, key)
-    if a:key == 'q' || a:key == "\\<Esc>"
+    if a:key == 'q' || a:key == "\<Esc>"
         call popup_close(a:winid)
         return 1
     elseif a:key == 'y'
         " Copy SQL content to clipboard (skip header lines)
         let l:bufnr = winbufnr(a:winid)
-        let l:lines = getbufline(l:bufnr, 10, '$')  " Skip first 9 lines
-        let l:text = join(l:lines, "\\n")
+        let l:lines = getbufline(l:bufnr, 10, '$')
+        let l:text = join(l:lines, "\n")
         let @+ = l:text
         let @* = l:text
         echo "SQL content copied to clipboard!"
