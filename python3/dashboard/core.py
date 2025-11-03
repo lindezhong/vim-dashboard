@@ -1250,9 +1250,13 @@ function DashboardScrollDown(lines)
     local current_top = vim.fn.line('w0')
     local new_top = math.min(current_top + lines, math.max(1, total_lines - win_height + 1))
 
-    -- Set cursor to new top line
-    vim.api.nvim_win_set_cursor(win, {new_top, 0})
-    vim.cmd('normal! zt')
+    -- Use Ctrl+E to scroll down without moving cursor or changing window
+    if new_top > current_top then
+        local scroll_lines = new_top - current_top
+        for i = 1, scroll_lines do
+            vim.cmd('normal! \\<C-e>')
+        end
+    end
 end
 
 function DashboardScrollUp(lines)
@@ -1262,9 +1266,13 @@ function DashboardScrollUp(lines)
     local current_top = vim.fn.line('w0')
     local new_top = math.max(1, current_top - lines)
 
-    -- Set cursor to new top line
-    vim.api.nvim_win_set_cursor(win, {new_top, 0})
-    vim.cmd('normal! zt')
+    -- Use Ctrl+Y to scroll up without moving cursor or changing window
+    if new_top < current_top then
+        local scroll_lines = current_top - new_top
+        for i = 1, scroll_lines do
+            vim.cmd('normal! \\<C-y>')
+        end
+    end
 end
 EOF
                 ''')
@@ -1303,28 +1311,34 @@ function! DashboardCopyAllContentFallback()
 endfunction
 
 function! DashboardScrollDownFallback(lines)
-    let l:current_line = line('.')
+    let l:current_top = line('w0')
     let l:total_lines = line('$')
     let l:win_height = winheight(0)
-    let l:new_line = min([l:current_line + a:lines, l:total_lines])
-    execute 'normal! ' . l:new_line . 'G'
+    let l:new_top = min([l:current_top + a:lines, max([1, l:total_lines - l:win_height + 1])])
 
-    " Adjust window position if needed
-    let l:top_line = line('w0')
-    if l:new_line > l:top_line + l:win_height - 3
-        execute 'normal! zt'
+    " Use Ctrl+E to scroll down without changing window size/position
+    if l:new_top > l:current_top
+        let l:scroll_lines = l:new_top - l:current_top
+        let l:i = 0
+        while l:i < l:scroll_lines
+            execute "normal! \<C-e>"
+            let l:i = l:i + 1
+        endwhile
     endif
 endfunction
 
 function! DashboardScrollUpFallback(lines)
-    let l:current_line = line('.')
-    let l:new_line = max([1, l:current_line - a:lines])
-    execute 'normal! ' . l:new_line . 'G'
+    let l:current_top = line('w0')
+    let l:new_top = max([1, l:current_top - a:lines])
 
-    " Adjust window position if needed
-    let l:top_line = line('w0')
-    if l:new_line < l:top_line + 2
-        execute 'normal! zt'
+    " Use Ctrl+Y to scroll up without changing window size/position
+    if l:new_top < l:current_top
+        let l:scroll_lines = l:current_top - l:new_top
+        let l:i = 0
+        while l:i < l:scroll_lines
+            execute "normal! \<C-y>"
+            let l:i = l:i + 1
+        endwhile
     endif
 endfunction
                 ''')
