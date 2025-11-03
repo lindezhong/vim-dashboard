@@ -1066,15 +1066,27 @@ def dashboard_show_sql():
         popup_height = max(max_height, 10)
 
         # Create popup using Vim's popup functionality
-        # Use a safer method to pass content to Vim
-        # Set each line individually to avoid escaping issues
-        vim.command('let l:popup_content = []')
-        for line in lines:
-            # Escape single quotes and backslashes for VimScript
-            escaped_line = line.replace('\\', '\\\\').replace("'", "''")
-            vim.command(f"call add(l:popup_content, '{escaped_line}')")
+        # Use the safest method: create a temporary buffer and read from it
+        # This completely avoids any string escaping issues
 
-        vim.command('''
+        # Create a temporary buffer with the content
+        vim.command('new')
+        vim.command('setlocal buftype=nofile noswapfile')
+
+        # Set the content in the buffer (no escaping needed)
+        vim.current.buffer[:] = lines
+
+        # Get buffer number for reference
+        temp_buf_num = vim.current.buffer.number
+
+        # Close the temporary buffer window but keep the buffer
+        vim.command('quit')
+
+        # Now create popup using the buffer content
+        vim.command(f'''
+        " Get content from the temporary buffer
+        let l:popup_content = getbufline({temp_buf_num}, 1, '$')
+
         let l:popup_opts = {{
             \\ 'title': ' SQL Query ',
             \\ 'wrap': 1,
@@ -1130,6 +1142,9 @@ def dashboard_show_sql():
             resize {popup_height}
         endif
         ''')
+
+        # Clean up the temporary buffer
+        vim.command(f'bdelete! {temp_buf_num}')
 
     except Exception as e:
         error_msg = format_error_message(e, "Show SQL")
