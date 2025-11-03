@@ -1164,25 +1164,45 @@ function! DashboardSQLPopupFilter(winid, key)
         return 1
     elseif a:key == "\<S-Down>"
         " Scroll down (page down) - use popup_setoptions with only firstline to avoid position changes
-        let l:current_first = get(popup_getoptions(a:winid), 'firstline', 1)
+        let l:opts_before = popup_getoptions(a:winid)
+        echom "DEBUG: Before S-Down - pos:" . get(l:opts_before, 'pos', 'none') . " line:" . get(l:opts_before, 'line', 'none') . " col:" . get(l:opts_before, 'col', 'none') . " width:" . get(l:opts_before, 'width', 'none') . " height:" . get(l:opts_before, 'height', 'none')
+        let l:current_first = get(l:opts_before, 'firstline', 1)
+        echom "DEBUG: S-Down scroll from line " . l:current_first . " to " . (l:current_first + 10)
         call popup_setoptions(a:winid, {'firstline': l:current_first + 10})
+        let l:opts_after = popup_getoptions(a:winid)
+        echom "DEBUG: After S-Down - pos:" . get(l:opts_after, 'pos', 'none') . " line:" . get(l:opts_after, 'line', 'none') . " col:" . get(l:opts_after, 'col', 'none') . " width:" . get(l:opts_after, 'width', 'none') . " height:" . get(l:opts_after, 'height', 'none')
         return 1
     elseif a:key == "\<S-Up>"
         " Scroll up (page up) - use popup_setoptions with only firstline to avoid position changes
-        let l:current_first = get(popup_getoptions(a:winid), 'firstline', 1)
+        let l:opts_before = popup_getoptions(a:winid)
+        echom "DEBUG: Before S-Up - pos:" . get(l:opts_before, 'pos', 'none') . " line:" . get(l:opts_before, 'line', 'none') . " col:" . get(l:opts_before, 'col', 'none') . " width:" . get(l:opts_before, 'width', 'none') . " height:" . get(l:opts_before, 'height', 'none')
+        let l:current_first = get(l:opts_before, 'firstline', 1)
         let l:new_first = max([1, l:current_first - 10])
+        echom "DEBUG: S-Up scroll from line " . l:current_first . " to " . l:new_first
         call popup_setoptions(a:winid, {'firstline': l:new_first})
+        let l:opts_after = popup_getoptions(a:winid)
+        echom "DEBUG: After S-Up - pos:" . get(l:opts_after, 'pos', 'none') . " line:" . get(l:opts_after, 'line', 'none') . " col:" . get(l:opts_after, 'col', 'none') . " width:" . get(l:opts_after, 'width', 'none') . " height:" . get(l:opts_after, 'height', 'none')
         return 1
     elseif a:key == "\<Down>" || a:key == 'j'
         " Scroll down one line - use popup_setoptions with only firstline to avoid position changes
-        let l:current_first = get(popup_getoptions(a:winid), 'firstline', 1)
+        let l:opts_before = popup_getoptions(a:winid)
+        echom "DEBUG: Before j/Down - pos:" . get(l:opts_before, 'pos', 'none') . " line:" . get(l:opts_before, 'line', 'none') . " col:" . get(l:opts_before, 'col', 'none') . " width:" . get(l:opts_before, 'width', 'none') . " height:" . get(l:opts_before, 'height', 'none')
+        let l:current_first = get(l:opts_before, 'firstline', 1)
+        echom "DEBUG: j/Down scroll from line " . l:current_first . " to " . (l:current_first + 1)
         call popup_setoptions(a:winid, {'firstline': l:current_first + 1})
+        let l:opts_after = popup_getoptions(a:winid)
+        echom "DEBUG: After j/Down - pos:" . get(l:opts_after, 'pos', 'none') . " line:" . get(l:opts_after, 'line', 'none') . " col:" . get(l:opts_after, 'col', 'none') . " width:" . get(l:opts_after, 'width', 'none') . " height:" . get(l:opts_after, 'height', 'none')
         return 1
     elseif a:key == "\<Up>" || a:key == 'k'
         " Scroll up one line - use popup_setoptions with only firstline to avoid position changes
-        let l:current_first = get(popup_getoptions(a:winid), 'firstline', 1)
+        let l:opts_before = popup_getoptions(a:winid)
+        echom "DEBUG: Before k/Up - pos:" . get(l:opts_before, 'pos', 'none') . " line:" . get(l:opts_before, 'line', 'none') . " col:" . get(l:opts_before, 'col', 'none') . " width:" . get(l:opts_before, 'width', 'none') . " height:" . get(l:opts_before, 'height', 'none')
+        let l:current_first = get(l:opts_before, 'firstline', 1)
         let l:new_first = max([1, l:current_first - 1])
+        echom "DEBUG: k/Up scroll from line " . l:current_first . " to " . l:new_first
         call popup_setoptions(a:winid, {'firstline': l:new_first})
+        let l:opts_after = popup_getoptions(a:winid)
+        echom "DEBUG: After k/Up - pos:" . get(l:opts_after, 'pos', 'none') . " line:" . get(l:opts_after, 'line', 'none') . " col:" . get(l:opts_after, 'col', 'none') . " width:" . get(l:opts_after, 'width', 'none') . " height:" . get(l:opts_after, 'height', 'none')
         return 1
     endif
     return 0
@@ -1244,16 +1264,28 @@ end
 
 function DashboardScrollDown(lines)
     -- Use Ctrl+E to scroll down without moving cursor or changing window
+    local win = vim.api.nvim_get_current_win()
+    local win_config_before = vim.api.nvim_win_get_config(win)
+    print("DEBUG: Neovim Before scroll down - row:" .. (win_config_before.row or 'none') .. " col:" .. (win_config_before.col or 'none') .. " width:" .. (win_config_before.width or 'none') .. " height:" .. (win_config_before.height or 'none'))
+    print("DEBUG: Neovim scroll down " .. lines .. " lines")
     for i = 1, lines do
         vim.cmd('normal! \<C-e>')
     end
+    local win_config_after = vim.api.nvim_win_get_config(win)
+    print("DEBUG: Neovim After scroll down - row:" .. (win_config_after.row or 'none') .. " col:" .. (win_config_after.col or 'none') .. " width:" .. (win_config_after.width or 'none') .. " height:" .. (win_config_after.height or 'none'))
 end
 
 function DashboardScrollUp(lines)
     -- Use Ctrl+Y to scroll up without moving cursor or changing window
+    local win = vim.api.nvim_get_current_win()
+    local win_config_before = vim.api.nvim_win_get_config(win)
+    print("DEBUG: Neovim Before scroll up - row:" .. (win_config_before.row or 'none') .. " col:" .. (win_config_before.col or 'none') .. " width:" .. (win_config_before.width or 'none') .. " height:" .. (win_config_before.height or 'none'))
+    print("DEBUG: Neovim scroll up " .. lines .. " lines")
     for i = 1, lines do
         vim.cmd('normal! \<C-y>')
     end
+    local win_config_after = vim.api.nvim_win_get_config(win)
+    print("DEBUG: Neovim After scroll up - row:" .. (win_config_after.row or 'none') .. " col:" .. (win_config_after.col or 'none') .. " width:" .. (win_config_after.width or 'none') .. " height:" .. (win_config_after.height or 'none'))
 end
 EOF
                 ''')
@@ -1293,20 +1325,26 @@ endfunction
 
 function! DashboardScrollDownFallback(lines)
     " Use Ctrl+E to scroll down without changing window size/position
+    echom "DEBUG: Fallback Before scroll down - winheight:" . winheight(0) . " winwidth:" . winwidth(0) . " line:" . line('.') . " wintop:" . line('w0')
+    echom "DEBUG: Fallback scroll down " . a:lines . " lines"
     let l:i = 0
     while l:i < a:lines
         execute "normal! \<C-e>"
         let l:i = l:i + 1
     endwhile
+    echom "DEBUG: Fallback After scroll down - winheight:" . winheight(0) . " winwidth:" . winwidth(0) . " line:" . line('.') . " wintop:" . line('w0')
 endfunction
 
 function! DashboardScrollUpFallback(lines)
     " Use Ctrl+Y to scroll up without changing window size/position
+    echom "DEBUG: Fallback Before scroll up - winheight:" . winheight(0) . " winwidth:" . winwidth(0) . " line:" . line('.') . " wintop:" . line('w0')
+    echom "DEBUG: Fallback scroll up " . a:lines . " lines"
     let l:i = 0
     while l:i < a:lines
         execute "normal! \<C-y>"
         let l:i = l:i + 1
     endwhile
+    echom "DEBUG: Fallback After scroll up - winheight:" . winheight(0) . " winwidth:" . winwidth(0) . " line:" . line('.') . " wintop:" . line('w0')
 endfunction
                 ''')
 
