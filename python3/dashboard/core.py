@@ -1006,12 +1006,8 @@ def dashboard_reset_variables():
 def dashboard_show_sql():
     """Show the rendered SQL for current dashboard."""
     try:
-        # Add debug logging
-        vim.command('echohl WarningMsg | echo "[DEBUG] Starting dashboard_show_sql" | echohl None')
-
         # Get current buffer file path
         current_file = vim.current.buffer.name
-        vim.command(f'echohl WarningMsg | echo "[DEBUG] Current file: {current_file}" | echohl None')
 
         if not current_file:
             vim.command('echohl ErrorMsg | echo "No active dashboard buffer" | echohl None')
@@ -1033,7 +1029,6 @@ def dashboard_show_sql():
 
         # Get the rendered SQL
         rendered_sql = current_task.get_rendered_sql()
-        vim.command('echohl WarningMsg | echo "[DEBUG] Got rendered SQL" | echohl None')
 
         if not rendered_sql:
             vim.command('echohl WarningMsg | echo "No SQL found for current dashboard" | echohl None')
@@ -1075,7 +1070,7 @@ def dashboard_show_sql():
         lines.extend(["", "Rendered SQL:"])
         lines.extend(sql_lines)
 
-        vim.command('echohl WarningMsg | echo "[DEBUG] Creating buffer" | echohl None')
+
 
         # Create a temporary buffer with the content
         vim.command('let l:temp_buf = bufnr("__dashboard_sql__", 1)')
@@ -1106,11 +1101,11 @@ def dashboard_show_sql():
         width = max(max_width, 60)
         height = min(len(lines) + 2, 25)
 
-        vim.command(f'echohl WarningMsg | echo "[DEBUG] Dimensions: {width}x{height}" | echohl None')
+
 
         # Check editor type and create appropriate popup
         if vim.eval('has("nvim")') == '1':
-            vim.command('echohl WarningMsg | echo "[DEBUG] Using Neovim floating window" | echohl None')
+
             # Neovim floating window - use safer approach
             lua_script = f'''
 local buf = vim.fn.bufnr("__dashboard_sql__")
@@ -1282,7 +1277,7 @@ vim.g.dashboard_sql_popup_win = win
             vim.command(lua_script)
             vim.command('EOF')
         elif vim.eval('exists("*popup_create")') == '1':
-            vim.command('echohl WarningMsg | echo "[DEBUG] Using Vim popup" | echohl None')
+
             # Vim popup - use safer approach to avoid escaping issues
 
             # Create popup options step by step to avoid complex escaping
@@ -1340,7 +1335,7 @@ function! DashboardSQLPopupFilter(winid, key)
 endfunction
             ''')
         else:
-            vim.command('echohl WarningMsg | echo "[DEBUG] Using split window fallback" | echohl None')
+
             # Fallback: split window - fix escaping
             vim.command(f'''
 " Fallback to split window
@@ -1378,9 +1373,5 @@ endfunction
         vim.command('echohl MoreMsg | echo "SQL popup created. Keys: Esc=close, y=copy, j/k/↑↓=scroll, Shift+↑↓=half-page, PageUp/Down=full-page" | echohl None')
 
     except Exception as e:
-        import traceback
-        error_details = traceback.format_exc()
-        vim.command(f'echohl ErrorMsg | echo "[DEBUG] Exception: {str(e)}" | echohl None')
-        vim.command(f'echohl ErrorMsg | echo "[DEBUG] Traceback: {error_details[:200]}" | echohl None')
         error_msg = format_error_message(e, "Show SQL")
         vim.command(f'echohl ErrorMsg | echo "{error_msg}" | echohl None')
