@@ -57,12 +57,15 @@ class DashboardTask:
         for arg in args:
             var_name = arg.get('name') or arg.get('key')
             if var_name:
-                self.variables_info[var_name] = {
-                    'type': arg.get('type', 'string'),
-                    'default_value': arg.get('default'),
-                    'current_value': self.runtime_variables.get(var_name, arg.get('default')),
-                    'description': arg.get('description', '')
-                }
+                # Only include variables that should be shown (default: True)
+                if arg.get('show', True):
+                    self.variables_info[var_name] = {
+                        'type': arg.get('type', 'string'),
+                        'default_value': arg.get('default'),
+                        'current_value': self.runtime_variables.get(var_name, arg.get('default')),
+                        'description': arg.get('description', ''),
+                        'show': arg.get('show', True)
+                    }
 
     def update_variable(self, var_name: str, new_value: Any) -> bool:
         """Update a runtime variable value."""
@@ -314,8 +317,11 @@ class DashboardTask:
                 'last_run': self.last_run
             }
 
-            # Add variables information to config for display
-            if self.variables_info:
+            # Add variables information to config for display (only if args_show is True)
+            query_config = self.config.get('query', {})
+            should_show_variables = query_config.get('args_show', False) if isinstance(query_config, dict) else False
+
+            if should_show_variables and self.variables_info:
                 config_with_countdown['_variables_info'] = self.get_variables_info()
 
             chart_content = ChartRenderer.render_chart(chart_type, data, config_with_countdown)

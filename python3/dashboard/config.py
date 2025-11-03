@@ -332,3 +332,27 @@ class ConfigManager:
         else:
             # Fallback to old format
             return self.config.get('args', [])
+
+    def should_show_variables_panel(self) -> bool:
+        """Check if Variables panel should be displayed."""
+        if not self.config:
+            return False
+
+        # Check query.args_show configuration (default: False)
+        query_config = self.config.get('query', {})
+        if isinstance(query_config, dict):
+            return query_config.get('args_show', False)
+
+        return False
+
+    def get_visible_args_config(self) -> List[Dict[str, Any]]:
+        """Get template arguments configuration filtered by show attribute."""
+        args = self.get_args_config()
+
+        # Filter args based on individual show attribute (default: True)
+        visible_args = []
+        for arg in args:
+            if arg.get('show', True):  # Default to True if show is not specified
+                visible_args.append(arg)
+
+        return visible_args
