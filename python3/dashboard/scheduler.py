@@ -72,6 +72,21 @@ class DashboardTask:
         if var_name not in self.variables_info:
             return False
 
+        # Handle empty/null values
+        if isinstance(new_value, str):
+            new_value_str = new_value.strip()
+            # Check for various representations of null/empty values
+            if new_value_str.lower() in (''):
+                new_value = None
+            else:
+                new_value = new_value_str
+
+        # If value is None, set it directly without type conversion
+        if new_value is None:
+            self.runtime_variables[var_name] = None
+            self.variables_info[var_name]['current_value'] = None
+            return True
+
         # Type conversion based on variable type
         var_type = self.variables_info[var_name]['type']
         try:
@@ -114,7 +129,7 @@ class DashboardTask:
                     except (json.JSONDecodeError, ValueError):
                         # Fall back to key=value parsing
                         new_value = dict(item.split('=', 1) for item in new_value.split(',') if '=' in item)
-            # string type needs no conversion
+            # string type needs no conversion (already handled above)
 
             self.runtime_variables[var_name] = new_value
             self.variables_info[var_name]['current_value'] = new_value
