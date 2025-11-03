@@ -1165,44 +1165,44 @@ function! DashboardSQLPopupFilter(winid, key)
     elseif a:key == "\<S-Down>"
         " Scroll down (page down) - use popup_setoptions with only firstline to avoid position changes
         let l:opts_before = popup_getoptions(a:winid)
-        echom "DEBUG: Before S-Down - pos:" . get(l:opts_before, 'pos', 'none') . " line:" . get(l:opts_before, 'line', 'none') . " col:" . get(l:opts_before, 'col', 'none') . " width:" . get(l:opts_before, 'width', 'none') . " height:" . get(l:opts_before, 'height', 'none')
+        echom "DEBUG: Before S-Down - pos:" . get(l:opts_before, 'pos', 'center') . " firstline:" . get(l:opts_before, 'firstline', 1) . " minwidth:" . get(l:opts_before, 'minwidth', 'auto') . " minheight:" . get(l:opts_before, 'minheight', 'auto')
         let l:current_first = get(l:opts_before, 'firstline', 1)
         echom "DEBUG: S-Down scroll from line " . l:current_first . " to " . (l:current_first + 10)
         call popup_setoptions(a:winid, {'firstline': l:current_first + 10})
         let l:opts_after = popup_getoptions(a:winid)
-        echom "DEBUG: After S-Down - pos:" . get(l:opts_after, 'pos', 'none') . " line:" . get(l:opts_after, 'line', 'none') . " col:" . get(l:opts_after, 'col', 'none') . " width:" . get(l:opts_after, 'width', 'none') . " height:" . get(l:opts_after, 'height', 'none')
+        echom "DEBUG: After S-Down - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
         return 1
     elseif a:key == "\<S-Up>"
         " Scroll up (page up) - use popup_setoptions with only firstline to avoid position changes
         let l:opts_before = popup_getoptions(a:winid)
-        echom "DEBUG: Before S-Up - pos:" . get(l:opts_before, 'pos', 'none') . " line:" . get(l:opts_before, 'line', 'none') . " col:" . get(l:opts_before, 'col', 'none') . " width:" . get(l:opts_before, 'width', 'none') . " height:" . get(l:opts_before, 'height', 'none')
+        echom "DEBUG: Before S-Up - pos:" . get(l:opts_before, 'pos', 'center') . " firstline:" . get(l:opts_before, 'firstline', 1) . " minwidth:" . get(l:opts_before, 'minwidth', 'auto') . " minheight:" . get(l:opts_before, 'minheight', 'auto')
         let l:current_first = get(l:opts_before, 'firstline', 1)
         let l:new_first = max([1, l:current_first - 10])
         echom "DEBUG: S-Up scroll from line " . l:current_first . " to " . l:new_first
         call popup_setoptions(a:winid, {'firstline': l:new_first})
         let l:opts_after = popup_getoptions(a:winid)
-        echom "DEBUG: After S-Up - pos:" . get(l:opts_after, 'pos', 'none') . " line:" . get(l:opts_after, 'line', 'none') . " col:" . get(l:opts_after, 'col', 'none') . " width:" . get(l:opts_after, 'width', 'none') . " height:" . get(l:opts_after, 'height', 'none')
+        echom "DEBUG: After S-Up - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
         return 1
     elseif a:key == "\<Down>" || a:key == 'j'
         " Scroll down one line - use popup_setoptions with only firstline to avoid position changes
         let l:opts_before = popup_getoptions(a:winid)
-        echom "DEBUG: Before j/Down - pos:" . get(l:opts_before, 'pos', 'none') . " line:" . get(l:opts_before, 'line', 'none') . " col:" . get(l:opts_before, 'col', 'none') . " width:" . get(l:opts_before, 'width', 'none') . " height:" . get(l:opts_before, 'height', 'none')
+        echom "DEBUG: Before j/Down - pos:" . get(l:opts_before, 'pos', 'center') . " firstline:" . get(l:opts_before, 'firstline', 1) . " minwidth:" . get(l:opts_before, 'minwidth', 'auto') . " minheight:" . get(l:opts_before, 'minheight', 'auto')
         let l:current_first = get(l:opts_before, 'firstline', 1)
         echom "DEBUG: j/Down scroll from line " . l:current_first . " to " . (l:current_first + 1)
         call popup_setoptions(a:winid, {'firstline': l:current_first + 1})
         let l:opts_after = popup_getoptions(a:winid)
-        echom "DEBUG: After j/Down - pos:" . get(l:opts_after, 'pos', 'none') . " line:" . get(l:opts_after, 'line', 'none') . " col:" . get(l:opts_after, 'col', 'none') . " width:" . get(l:opts_after, 'width', 'none') . " height:" . get(l:opts_after, 'height', 'none')
+        echom "DEBUG: After j/Down - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
         return 1
     elseif a:key == "\<Up>" || a:key == 'k'
         " Scroll up one line - use popup_setoptions with only firstline to avoid position changes
         let l:opts_before = popup_getoptions(a:winid)
-        echom "DEBUG: Before k/Up - pos:" . get(l:opts_before, 'pos', 'none') . " line:" . get(l:opts_before, 'line', 'none') . " col:" . get(l:opts_before, 'col', 'none') . " width:" . get(l:opts_before, 'width', 'none') . " height:" . get(l:opts_before, 'height', 'none')
+        echom "DEBUG: Before k/Up - pos:" . get(l:opts_before, 'pos', 'center') . " firstline:" . get(l:opts_before, 'firstline', 1) . " minwidth:" . get(l:opts_before, 'minwidth', 'auto') . " minheight:" . get(l:opts_before, 'minheight', 'auto')
         let l:current_first = get(l:opts_before, 'firstline', 1)
         let l:new_first = max([1, l:current_first - 1])
         echom "DEBUG: k/Up scroll from line " . l:current_first . " to " . l:new_first
         call popup_setoptions(a:winid, {'firstline': l:new_first})
         let l:opts_after = popup_getoptions(a:winid)
-        echom "DEBUG: After k/Up - pos:" . get(l:opts_after, 'pos', 'none') . " line:" . get(l:opts_after, 'line', 'none') . " col:" . get(l:opts_after, 'col', 'none') . " width:" . get(l:opts_after, 'width', 'none') . " height:" . get(l:opts_after, 'height', 'none')
+        echom "DEBUG: After k/Up - pos:" . get(l:opts_after, 'pos', 'center') . " firstline:" . get(l:opts_after, 'firstline', 1) . " minwidth:" . get(l:opts_after, 'minwidth', 'auto') . " minheight:" . get(l:opts_after, 'minheight', 'auto')
         return 1
     endif
     return 0
