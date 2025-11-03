@@ -523,32 +523,148 @@ function! dashboard#setup_dashboard_buffer()
   endif
 endfunction
 
-" Start periodic refresh timer for active dashboard buffer
-function! dashboard#start_refresh_timer()
-  " Stop any existing timer
-  call dashboard#stop_refresh_timer()
+" Global timer management for all dashboard buffers
+let s:global_dashboard_timer = 0
 
-  " Start new timer that checks every 2 seconds
-  let b:dashboard_timer = timer_start(2000, 'dashboard#timer_callback', {'repeat': -1})
+" Start global refresh timer for all dashboard buffers
+function! dashboard#start_global_refresh_timer()
+  " Stop any existing global timer
+  call dashboard#stop_global_refresh_timer()
+
+  " Start new global timer that checks every 2 seconds
+  let s:global_dashboard_timer = timer_start(2000, 'dashboard#global_timer_callback', {'repeat': -1})
 endfunction
 
-" Stop refresh timer
-function! dashboard#stop_refresh_timer()
-  if exists('b:dashboard_timer')
-    call timer_stop(b:dashboard_timer)
-    unlet b:dashboard_timer
+" Stop global refresh timer
+function! dashboard#stop_global_refresh_timer()
+  if s:global_dashboard_timer > 0
+    call timer_stop(s:global_dashboard_timer)
+    let s:global_dashboard_timer = 0
   endif
 endfunction
 
-" Timer callback function
-function! dashboard#timer_callback(timer_id)
-  " Only process if current buffer is a dashboard buffer
-  if exists('b:is_dashboard_buffer') && b:is_dashboard_buffer
-    call dashboard#check_file_changes()
-  else
-    " Stop timer if buffer is no longer a dashboard buffer
+" Global timer callback function - checks all dashboard buffers in all windows
+function! dashboard#global_timer_callback(timer_id)
+  " Get list of all dashboard buffers across all windows
+  let l:dashboard_buffers = dashboard#get_all_dashboard_buffers()
+
+  " If no dashboard buffers found, stop the timer
+  if empty(l:dashboard_buffers)
     call timer_stop(a:timer_id)
+    let s:global_dashboard_timer = 0
+    return
   endif
+
+  " Check file changes for each dashboard buffer
+  for l:bufnr in l:dashboard_buffers
+    call dashboard#check_file_changes_for_buffer(l:bufnr)
+  endfor
+endfunction
+
+" Get all dashboard buffer numbers across all windows
+function! dashboard#get_all_dashboard_buffers()
+  let l:dashboard_buffers = []
+
+  " Check all buffers
+  for l:bufnr in range(1, bufnr('$'))
+    " Skip non-existent buffers
+    if !bufexists(l:bufnr)
+      continue
+    endif
+
+    " Check if buffer is a dashboard buffer
+    if getbufvar(l:bufnr, 'is_dashboard_buffer', 0)
+      call add(l:dashboard_buffers, l:bufnr)
+    endif
+  endfor
+
+  return l:dashboard_buffers
+endfunction
+
+" Check for file changes for a specific buffer
+function! dashboard#check_file_changes_for_buffer(bufnr)
+  " Get buffer variables
+  let l:is_dashboard = getbufvar(a:bufnr, 'is_dashboard_buffer', 0)
+  let l:file_path = getbufvar(a:bufnr, 'dashboard_file_path', '')
+  let l:last_mtime = getbufvar(a:bufnr, 'dashboard_last_mtime', 0)
+
+  " Skip if not a dashboard buffer or missing required info
+  if !l:is_dashboard || empty(l:file_path)
+    return
+  endif
+
+  " Check if file still exists
+  if !filereadable(l:file_path)
+    return
+  endif
+
+  " Get current modification time
+  let l:current_mtime = getftime(l:file_path)
+
+  " Compare with stored modification time
+  if l:current_mtime > l:last_mtime
+    " File has been modified, reload it
+    call setbufvar(a:bufnr, 'dashboard_last_mtime', l:current_mtime)
+
+    " Find windows displaying this buffer and reload
+    let l:windows = dashboard#get_windows_for_buffer(a:bufnr)
+    for l:winnr in l:windows
+      " Save current window and switch to target window
+      let l:current_win = winnr()
+      execute l:winnr . 'wincmd w'
+
+      " Save current cursor position
+      let l:save_cursor = getpos('.')
+
+      " Reload file silently
+      silent! edit!
+
+      " Restore cursor position
+      call setpos('.', l:save_cursor)
+
+      " Return to original window
+      execute l:current_win . 'wincmd w'
+    endfor
+  endif
+endfunction
+
+" Get window numbers that display a specific buffer
+function! dashboard#get_windows_for_buffer(bufnr)
+  let l:windows = []
+
+  " Check all windows in all tabs
+  for l:tabnr in range(1, tabpagenr('$'))
+    for l:winnr in range(1, tabpagewinnr(l:tabnr, '$'))
+      if tabpagebuflist(l:tabnr)[l:winnr - 1] == a:bufnr
+        " Store tab-qualified window number
+        if l:tabnr == tabpagenr()
+          " Current tab - use simple window number
+          call add(l:windows, l:winnr)
+        else
+          " Other tab - use tab-qualified window number
+          call add(l:windows, l:tabnr . 't' . l:winnr)
+        endif
+      endif
+    endfor
+  endfor
+
+  return l:windows
+endfunction
+
+" Legacy functions for backward compatibility
+function! dashboard#start_refresh_timer()
+  " Redirect to global timer management
+  call dashboard#start_global_refresh_timer()
+endfunction
+
+function! dashboard#stop_refresh_timer()
+  " For backward compatibility, but now we manage globally
+  " Individual buffers don't need to stop the global timer
+endfunction
+
+function! dashboard#timer_callback(timer_id)
+  " Legacy function - redirect to global callback
+  call dashboard#global_timer_callback(a:timer_id)
 endfunction
 
 " Check for file changes and reload if necessary
