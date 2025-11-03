@@ -1082,33 +1082,35 @@ def dashboard_show_sql():
         # Close the temporary buffer window but keep the buffer
         vim.command('quit')
 
-        # Now create popup using the buffer content
-        vim.command(f'''
-        " Get content from the temporary buffer
-        let l:popup_content = getbufline({temp_buf_num}, 1, '$')
+        # Create popup using separate commands to avoid complex string interpolation
+        vim.command(f'let g:temp_buf_num = {temp_buf_num}')
 
-        let l:popup_opts = {{
-            \\ 'title': ' SQL Query ',
-            \\ 'wrap': 1,
-            \\ 'scrollbar': 1,
-            \\ 'resize': 1,
-            \\ 'close': 'button',
-            \\ 'border': [],
-            \\ 'borderchars': ['─', '│', '─', '│', '┌', '┐', '┘', '└'],
-            \\ 'minwidth': 60,
-            \\ 'maxwidth': 120,
-            \\ 'minheight': 10,
-            \\ 'maxheight': 30,
-            \\ 'pos': 'center',
-            \\ 'mapping': 0,
-            \\ 'filter': 'dashboard#sql_popup_filter',
-            \\ 'callback': 'dashboard#sql_popup_callback'
-        \\}}
+        # Execute VimScript commands step by step
+        vim.command('let l:popup_content = getbufline(g:temp_buf_num, 1, "$")')
 
+        # Check for popup support and create accordingly
+        vim.command('''
         if exists('*popup_create')
             " Vim 8.2+ popup
+            let l:popup_opts = {
+                \ 'title': ' SQL Query ',
+                \ 'wrap': 1,
+                \ 'scrollbar': 1,
+                \ 'resize': 1,
+                \ 'close': 'button',
+                \ 'border': [],
+                \ 'borderchars': ['─', '│', '─', '│', '┌', '┐', '┘', '└'],
+                \ 'minwidth': 60,
+                \ 'maxwidth': 120,
+                \ 'minheight': 10,
+                \ 'maxheight': 30,
+                \ 'pos': 'center',
+                \ 'mapping': 0,
+                \ 'filter': 'dashboard#sql_popup_filter',
+                \ 'callback': 'dashboard#sql_popup_callback'
+            \ }
             let g:dashboard_sql_popup_id = popup_create(l:popup_content, l:popup_opts)
-            call popup_setoptions(g:dashboard_sql_popup_id, {{'filetype': 'sql'}})
+            call popup_setoptions(g:dashboard_sql_popup_id, {'filetype': 'sql'})
         elseif exists('*nvim_open_win')
             " Neovim floating window
             let l:buf = nvim_create_buf(v:false, v:true)
@@ -1119,16 +1121,16 @@ def dashboard_show_sql():
             let l:width = min([max([max(map(copy(l:popup_content), 'len(v:val)')) + 4, 60]), 120])
             let l:height = min([len(l:popup_content) + 2, 30])
 
-            let l:opts = {{
-                \\ 'relative': 'editor',
-                \\ 'width': l:width,
-                \\ 'height': l:height,
-                \\ 'col': (&columns - l:width) / 2,
-                \\ 'row': (&lines - l:height) / 2,
-                \\ 'anchor': 'NW',
-                \\ 'style': 'minimal',
-                \\ 'border': 'rounded'
-            \\}}
+            let l:opts = {
+                \ 'relative': 'editor',
+                \ 'width': l:width,
+                \ 'height': l:height,
+                \ 'col': (&columns - l:width) / 2,
+                \ 'row': (&lines - l:height) / 2,
+                \ 'anchor': 'NW',
+                \ 'style': 'minimal',
+                \ 'border': 'rounded'
+            \ }
 
             let g:dashboard_sql_popup_id = nvim_open_win(l:buf, v:true, l:opts)
             nnoremap <buffer> q :lua vim.api.nvim_win_close(0, true)<CR>
@@ -1139,12 +1141,13 @@ def dashboard_show_sql():
             setlocal buftype=nofile noswapfile readonly filetype=sql
             call setline(1, l:popup_content)
             nnoremap <buffer> q :quit<CR>
-            resize {popup_height}
+            resize 20
         endif
         ''')
 
         # Clean up the temporary buffer
-        vim.command(f'bdelete! {temp_buf_num}')
+        vim.command('execute "bdelete! " . g:temp_buf_num')
+        vim.command('unlet g:temp_buf_num')
 
     except Exception as e:
         error_msg = format_error_message(e, "Show SQL")
