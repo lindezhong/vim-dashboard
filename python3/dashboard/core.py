@@ -1052,9 +1052,18 @@ def dashboard_show_sql():
         variables_info = current_task.get_variables_info()
 
         if variables_info:
+            import json
             for var_name, var_info in variables_info.items():
                 current_value = var_info.get('current_value', var_info.get('default_value', ''))
-                lines.append(f"{var_name}: {current_value}")
+                # Safely serialize complex values to avoid escape issues
+                try:
+                    if isinstance(current_value, (dict, list)):
+                        value_str = json.dumps(current_value, ensure_ascii=False)
+                    else:
+                        value_str = str(current_value)
+                except:
+                    value_str = str(current_value)
+                lines.append(f"{var_name}: {value_str}")
         else:
             lines.append("No variables defined")
 
@@ -1072,20 +1081,22 @@ def dashboard_show_sql():
         # Create popup using coc.nvim-style implementation
         # Simple, reliable approach without complex scrolling logic
 
-        # Prepare content for display
-        content_lines = []
-        for line in lines:
-            # Escape single quotes and handle newlines properly
-            escaped_line = line.replace("'", "''").replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "")
-            content_lines.append(escaped_line)
-
+        # Prepare content for display - use safer approach with list
         # Create a temporary buffer with the content
         vim.command('let l:temp_buf = bufnr("__dashboard_sql__", 1)')
         vim.command('call bufload(l:temp_buf)')
 
-        # Set buffer content
-        for i, line in enumerate(content_lines):
-            vim.command(f"call setbufline(l:temp_buf, {i+1}, '{line}')")
+        # Clear buffer first
+        vim.command('call deletebufline(l:temp_buf, 1, "$")')
+
+        # Set buffer content using setbufline with list to avoid escaping issues
+        vim.command('let l:content_lines = []')
+        for i, line in enumerate(lines):
+            # Use vim.eval to safely pass the line content
+            vim.command(f'let l:line_{i} = {repr(line)}')
+            vim.command(f'call add(l:content_lines, l:line_{i})')
+
+        vim.command('call setbufline(l:temp_buf, 1, l:content_lines)')
 
         # Set buffer options
         vim.command('call setbufvar(l:temp_buf, "&filetype", "sql")')
