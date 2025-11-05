@@ -46,31 +46,7 @@ show:
   
   # 热力图样式配置
   style:
-    # 颜色映射方案
-    colormap: "Blues"
-    # 是否显示数值
     show_values: true
-    # 数值格式
-    value_format: "{:.0f}"
-    # 字体大小
-    font_size: 8
-    # 网格线配置
-    grid_color: "white"
-    grid_width: 1
-    
-  # 颜色条配置
-  colorbar:
-    show: true
-    title: "活动强度"
-    position: "right"
-    
-  # 坐标轴配置
-  axes:
-    x_axis:
-      title: "小时"
-      tick_format: "{:02d}:00"
-    y_axis:
-      title: "星期"
       
   show_countdown: true
   countdown_format: "热力图更新: {time}s"

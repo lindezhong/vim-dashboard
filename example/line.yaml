@@ -38,18 +38,12 @@ show:
     - column: visitors
       label: "总访问量"
       color: "#3498db"
-      line_style: solid
-      marker: circle
-    - column: mobile_visitors  
+    - column: mobile_visitors
       label: "移动端访问"
       color: "#e74c3c"
-      line_style: dashed
-      marker: square
     - column: desktop_visitors
       label: "桌面端访问"
       color: "#2ecc71"
-      line_style: dotted
-      marker: triangle
   
   # 线条样式配置
   line_style:

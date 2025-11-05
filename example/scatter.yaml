@@ -40,26 +40,10 @@ show:
   size_column: profit_margin
   color_column: profit_category
   
-  axes:
-    x_axis:
-      title: "广告投入 (万元)"
-      show_grid: true
-    y_axis:
-      title: "销售额 (万元)"
-      show_grid: true
-      
-  style:
-    point_size: 8
-    alpha: 0.7
-    
   colors:
     High: "#2ecc71"
     Medium: "#f39c12"
     Low: "#e74c3c"
-    
-  legend:
-    show: true
-    position: top_right
     
   show_countdown: true
   countdown_format: "数据更新: {time}s"

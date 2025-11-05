@@ -40,68 +40,14 @@ show:
   style:
     bar_width: 0.8                # 柱子宽度（0.1-1.0）
     color: blue                   # 柱子颜色：blue, red, green, yellow, purple, cyan, magenta
-    gradient: true                # 是否使用渐变色
     show_values: true             # 是否在柱子上显示数值
-    value_format: "¥{:,.0f}"      # 数值显示格式
-    
-  # 坐标轴配置
-  axes:
-    x_axis:
-      title: "产品类别"           # X轴标题
-      rotation: 45                # 标签旋转角度（避免重叠）
-      show_grid: false            # 是否显示网格线
-      
-    y_axis:
-      title: "销售额 (元)"        # Y轴标题
-      show_grid: true             # 显示水平网格线
-      min_value: 0                # Y轴最小值
-      max_value: null             # Y轴最大值（null为自动）
-      format: "¥{:,.0f}"          # Y轴标签格式
-      
-  # 图例配置
-  legend:
-    show: true                    # 是否显示图例
-    position: top                 # 图例位置：top, bottom, left, right
-    
+
   # 颜色配置
   colors:
     primary: "#3498db"            # 主色调
     secondary: "#2ecc71"          # 次色调
     background: "#ffffff"         # 背景色
     text: "#2c3e50"               # 文字颜色
-    
-  # 动画配置
-  animation:
-    enabled: true                 # 是否启用动画
-    duration: 1.0                 # 动画持续时间（秒）
-    easing: ease_in_out           # 动画缓动函数
-    
-  # 交互配置
-  interaction:
-    hover_effect: true            # 鼠标悬停效果
-    click_action: none            # 点击动作：none, drill_down, popup
-    
-  # 数据标签配置
-  data_labels:
-    show: true                    # 是否显示数据标签
-    position: top                 # 标签位置：top, center, bottom
-    format: "{value}"             # 标签格式
-    font_size: 10                 # 字体大小
-    color: "#2c3e50"              # 标签颜色
-    
-  # 排序配置
-  sort:
-    enabled: true                 # 是否启用排序
-    by: value                     # 排序依据：value（数值）, label（标签）
-    order: desc                   # 排序顺序：asc, desc
-    
-  # 阈值线配置
-  threshold_lines:
-    - value: 600                  # 阈值
-      color: red                  # 线条颜色
-      style: dashed               # 线条样式：solid, dashed, dotted
-      label: "目标线"             # 标签
-      
-  # 倒计时显示
+
   show_countdown: true
   countdown_format: "数据更新倒计时: {time}s"

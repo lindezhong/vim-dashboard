@@ -40,35 +40,8 @@ show:
   
   # 箱线图样式配置
   style:
-    # 箱体颜色
-    box_color: "#3498db"
-    # 中位数线颜色
-    median_color: "#e74c3c"
-    # 异常值颜色
-    outlier_color: "#f39c12"
-    # 箱体透明度
-    alpha: 0.7
-    # 是否显示异常值
     show_outliers: true
-    # 是否显示均值
     show_means: true
-    
-  # 坐标轴配置
-  axes:
-    x_axis:
-      title: "分组"
-      show_grid: false
-    y_axis:
-      title: "数值"
-      show_grid: true
-      format: "{:.1f}"
-      
-  # 统计信息配置
-  statistics:
-    # 是否显示统计标签
-    show_labels: true
-    # 标签格式
-    label_format: "中位数: {median:.1f}"
     
   show_countdown: true
   countdown_format: "更新倒计时: {time}s"

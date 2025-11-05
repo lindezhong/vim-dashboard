@@ -46,21 +46,6 @@ show:
   
   style:
     stacked: true
-    alpha: 0.6
-    line_width: 2
-    
-  axes:
-    x_axis:
-      title: "月份"
-      show_grid: false
-    y_axis:
-      title: "用户数量"
-      show_grid: true
-      format: "{:,.0f}"
-      
-  legend:
-    show: true
-    position: top_left
-    
+
   show_countdown: true
   countdown_format: "更新中: {time}s"

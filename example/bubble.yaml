@@ -44,51 +44,11 @@ show:
   color_column: category
   label_column: company
   
-  # 气泡样式配置
-  style:
-    # 气泡大小范围
-    min_size: 10
-    max_size: 100
-    # 透明度
-    alpha: 0.6
-    # 边框配置
-    edge_width: 1
-    edge_color: "#2c3e50"
-    
   # 颜色配置
   colors:
     "Large Cap": "#e74c3c"
     "Mid Cap": "#f39c12"
     "Small Cap": "#3498db"
-    
-  # 坐标轴配置
-  axes:
-    x_axis:
-      title: "营收 (十亿美元)"
-      show_grid: true
-      format: "${:.0f}B"
-    y_axis:
-      title: "利润率 (%)"
-      show_grid: true
-      format: "{:.1f}%"
-      
-  # 标签配置
-  labels:
-    show: true
-    font_size: 9
-    offset_x: 5
-    offset_y: 5
-    
-  # 图例配置
-  legend:
-    show: true
-    position: "top_right"
-    title: "市值分类"
-    
-  # 工具提示配置
-  tooltip:
-    show: true
-    format: "{company}: 营收${revenue}B, 利润率{profit_margin}%, 市值${market_cap}B"
     
   show_countdown: true
   countdown_format: "气泡图更新: {time}s"

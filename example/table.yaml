@@ -43,63 +43,35 @@ show:
     - column: current_time        # 数据库列名
       alias: "当前时间"           # 显示名称
       width: 20                   # 列宽度（字符数）
-      align: center               # 对齐方式：left, center, right
 
     - column: random_number
       alias: "随机数"
       width: 10
-      align: right
-      format: "{:>3d}"            # 数字格式化：右对齐，3位数字
 
     - column: sales_amount
       alias: "销售金额"
       width: 12
-      align: right
-      format: "¥{:,}"             # 货币格式：添加千位分隔符
 
     - column: status
       alias: "状态"
       width: 10
-      align: center
-      # 状态颜色配置
-      color_map:
-        Active: green             # Active状态显示绿色
-        Pending: yellow           # Pending状态显示黄色
-        Inactive: red             # Inactive状态显示红色
 
     - column: username
       alias: "用户名"
       width: 12
-      align: left
 
     - column: key1
       alias: "k1"
       width: 10
-      align: center
 
     - column: key2
       alias: "k2"
       width: 10
-      align: center
 
   # 表格样式配置
   style:
     border: true                  # 是否显示边框
     header_style: bold blue       # 表头样式：粗体蓝色
-    row_styles:                   # 行样式配置
-      - ""                        # 奇数行默认样式
-      - "dim"                     # 偶数行暗色样式（斑马纹效果）
-    
-  # 排序配置
-  sort:
-    column: sales_amount          # 按销售金额排序
-    order: desc                   # 降序排列：desc（降序）或 asc（升序）
-    
-  # 分页配置
-  pagination:
-    enabled: false                # 是否启用分页
-    page_size: 10                 # 每页显示行数
-    
-  # 倒计时显示配置
+
   show_countdown: true            # 是否显示倒计时
   countdown_format: "下次更新: {time}s"  # 倒计时显示格式

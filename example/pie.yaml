@@ -34,37 +34,18 @@ show:
   
   # 饼图样式配置
   style:
-    # 是否显示百分比
     show_percentages: true
-    # 是否显示数值
     show_values: true
-    # 数值格式
-    value_format: "¥{:,.0f}"
-    # 百分比格式
-    percentage_format: "{:.1f}%"
-    # 是否显示标签
     show_labels: true
-    
+
   # 颜色配置
   colors:
     - "#FF6B6B"
-    - "#4ECDC4" 
+    - "#4ECDC4"
     - "#45B7D1"
     - "#96CEB4"
     - "#FFEAA7"
     - "#DDA0DD"
-    
-  # 图例配置
-  legend:
-    show: true
-    position: right
-    
-  # 分离配置（突出显示某些扇形）
-  explode:
-    # 突出显示最大的扇形
-    auto_explode_max: true
-    # 突出距离
-    explode_distance: 0.1
     
   show_countdown: true
   countdown_format: "刷新倒计时: {time}s"

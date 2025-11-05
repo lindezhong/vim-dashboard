@@ -40,24 +40,6 @@ show:
   # 样式配置
   style:
     color: "#3498db"
-    alpha: 0.7
-    edge_color: "#2c3e50"
-    edge_width: 1
-    
-  # 坐标轴配置
-  axes:
-    x_axis:
-      title: "分数"
-      show_grid: true
-    y_axis:
-      title: "频次"
-      show_grid: true
-      
-  # 统计信息显示
-  statistics:
-    show_mean: true
-    show_median: true
-    show_std: true
-    
+
   show_countdown: true
   countdown_format: "刷新: {time}s"
