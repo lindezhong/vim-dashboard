@@ -18,6 +18,9 @@ redis>=4.0.0
 # MongoDB
 pymongo>=4.0.0
 
+# nvim dependencies
+pynvim
+
 # Note: Additional database drivers can be installed separately if needed:
 # Oracle: pip install cx_Oracle>=8.0.0 (requires Oracle client and Visual C++)
 # SQL Server: pip install pyodbc>=4.0.0 (requires ODBC drivers)
