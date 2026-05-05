@@ -82,9 +82,12 @@ function! s:init_python()
       execute 'py3 sys.executable = "' . l:venv_python . '"'
     endif
 
-    " Add plugin path to Python path
-    execute 'python3 import sys'
+    "  Add plugin path and venv site-packages to Python path
+    execute 'python3 import sys, os'
     execute 'python3 sys.path.insert(0, "' . s:python_path . '")'
+    execute 'python3 _venv_lib = "' . s:venv_path . '/lib"'
+    execute 'python3 _site_pkgs = next((os.path.join(_venv_lib, d, "site-packages") for d in os.listdir(_venv_lib) if d.startswith("python")), None) if os.path.isdir(_venv_lib) else None'
+    execute 'python3 _site_pkgs and sys.path.insert(1, _site_pkgs)'
 
     let s:python_initialized = 1
   endif
